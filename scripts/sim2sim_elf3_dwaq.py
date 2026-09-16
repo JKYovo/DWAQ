@@ -20,26 +20,10 @@ def main():
     parser.add_argument("--command", type=float, nargs=3, default=[0.3, 0.0, 0.0])
     parser.add_argument("--scene", choices=["flat", "stairs"], default="flat")
     parser.add_argument("--step-height", type=float, default=0.05)
-    parser.add_argument(
-        "--shoulder-x-max-deviation",
-        type=float,
-        help="Optional symmetric safety bound in radians around each shoulder_x default pose",
-    )
-    parser.add_argument("--policy-action-clip", type=float, help="Clamp policy outputs before action history")
     args = parser.parse_args()
     if args.steps < 1:
         parser.error("--steps must be positive")
-    if args.shoulder_x_max_deviation is not None and args.shoulder_x_max_deviation <= 0:
-        parser.error("--shoulder-x-max-deviation must be positive")
-    if args.policy_action_clip is not None and args.policy_action_clip <= 0:
-        parser.error("--policy-action-clip must be positive")
     metadata = json.loads(args.policy.with_suffix(".json").read_text())
-    shoulder_x_max_deviation = args.shoulder_x_max_deviation
-    if shoulder_x_max_deviation is None:
-        shoulder_x_max_deviation = metadata.get("shoulder_x_max_deviation", 0.35)
-    policy_action_clip = args.policy_action_clip
-    if policy_action_clip is None:
-        policy_action_clip = metadata.get("policy_action_clip", 3.0)
     contract = json.loads((ASSET_DIR / "contract.json").read_text())
     if metadata.get("contract") != contract:
         raise ValueError("Policy metadata does not match the local ELF3 asset")
@@ -68,7 +52,6 @@ def main():
     kd = np.array([contract["damping"][n] for n in names])
     effort = np.array([contract["effort_limit"][n] for n in names])
     scale = np.array([contract["action_scale"][n] for n in names])
-    shoulder_x_ids = np.array([names.index("l_shoulder_x_joint"), names.index("r_shoulder_x_joint")])
     data = mujoco.MjData(model)
     data.qpos[:3] = contract["initial_position"]
     data.qpos[3:7] = [1, 0, 0, 0]
@@ -79,7 +62,6 @@ def main():
     history = None
     dt = contract["physics_dt"] * contract["control_decimation"]
     viewer = None
-    max_shoulder_x_deviation = 0.0
     if not args.headless:
         from mujoco import viewer as viewer_module
         viewer = viewer_module.launch_passive(model, data)
@@ -101,24 +83,14 @@ def main():
                 action = policy(torch.from_numpy(history.reshape(1, 500))).numpy()[0]
             if not np.isfinite(action).all():
                 raise FloatingPointError("Nonfinite policy output")
-            applied_action = np.clip(action, -policy_action_clip, policy_action_clip)
-            if shoulder_x_max_deviation is not None:
-                normalized_limit = shoulder_x_max_deviation / scale[shoulder_x_ids]
-                applied_action[shoulder_x_ids] = np.clip(
-                    applied_action[shoulder_x_ids], -normalized_limit, normalized_limit
-                )
-            target = default + applied_action * scale
+            target = default + np.clip(action, -100, 100) * scale
             for _ in range(contract["control_decimation"]):
                 torque = kp * (target - data.qpos[qpos_ids]) - kd * data.qvel[dof_ids]
                 data.ctrl[actuator_ids] = np.clip(torque, -effort, effort)
                 mujoco.mj_step(model, data)
                 if not np.isfinite(data.qpos).all() or not np.isfinite(data.qvel).all():
                     raise FloatingPointError("Nonfinite MuJoCo state")
-            max_shoulder_x_deviation = max(
-                max_shoulder_x_deviation,
-                float(np.max(np.abs(data.qpos[qpos_ids[shoulder_x_ids]] - default[shoulder_x_ids]))),
-            )
-            previous_action = applied_action
+            previous_action = action.copy()
             if viewer is not None:
                 if not viewer.is_running():
                     break
@@ -126,9 +98,7 @@ def main():
                 viewer.sync()
                 time.sleep(max(0.0, dt - (time.monotonic() - started)))
         print(json.dumps({"control_steps": step + 1, "sim_time": data.time,
-                          "final_root_height": float(data.qpos[2]),
-                          "max_shoulder_x_deviation_rad": max_shoulder_x_deviation,
-                          "finite": True}))
+                          "final_root_height": float(data.qpos[2]), "finite": True}))
     finally:
         if viewer is not None:
             viewer.close()

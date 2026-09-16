@@ -2,46 +2,15 @@
 from copy import deepcopy
 
 import isaaclab.sim as sim_utils
-import torch
-from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
 from legged_lab.assets.elf3 import CONTRACT, ELF3_CFG, FOOT_BODIES
-from legged_lab.envs.g1.g1_dwaq_config import G1DwaqAgentCfg, G1DwaqEnvCfg, G1DwaqRewardCfg
-
-
-SHOULDER_X_MAX_DEVIATION = 0.35
-# Three standard deviations keeps PPO exploration while preventing rare policy
-# samples from becoming extreme joint targets and re-entering observation history.
-POLICY_ACTION_CLIP = 3.0
-
-
-def shoulder_pose_l2(env, asset_cfg: SceneEntityCfg) -> torch.Tensor:
-    """Penalize large shoulder deviations while retaining small natural motion."""
-    asset = env.scene[asset_cfg.name]
-    angle = asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
-    return torch.sum(torch.square(angle), dim=1)
-
-
-@configclass
-class Elf3DwaqRewardCfg(G1DwaqRewardCfg):
-    # DWAQ has no AMP discriminator to keep upper-body motion human-like.
-    # L2 leaves small shoulder motion inexpensive while making the learned
-    # one-sided ~1.4 rad shoulder excursion costlier than velocity tracking.
-    shoulder_pose_l2 = RewTerm(
-        func=shoulder_pose_l2,
-        weight=-0.5,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["[lr]_shoulder_[yxz]_joint"])},
-    )
+from legged_lab.envs.g1.g1_dwaq_config import G1DwaqAgentCfg, G1DwaqEnvCfg
 
 
 @configclass
 class Elf3DwaqEnvCfg(G1DwaqEnvCfg):
-    reward = Elf3DwaqRewardCfg()
-    shoulder_x_max_deviation: float = SHOULDER_X_MAX_DEVIATION
-    policy_action_clip: float = POLICY_ACTION_CLIP
-
     def __post_init__(self):
         super().__post_init__()
         self.scene.robot = ELF3_CFG.copy()
