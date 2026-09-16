@@ -1,0 +1,24 @@
+# Python 3.10 / standalone Isaac Sim 4.5 / host IsaacLab 2.1.1.
+# Install the local IsaacLab and this repository's rsl_rl editable packages too.
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.5.1
+torchvision==0.20.1
+numpy==1.26.4
+scipy==1.15.3
+mujoco==3.3.2
+trimesh==4.12.2
+onnx==1.16.1
+onnxruntime==1.23.2
+tensorboard==2.20.0
+swanlab==0.8.5
+# SwanLab requires protobuf 6; the cloned legacy W&B/rl-games pins conflict with it.
+wandb==0.19.11
+rl-games==1.6.5
+gymnasium==1.2.0
+pillow==11.2.1
+starlette==0.45.3
+junitparser==5.0.3
+pytest==9.1.1
+pytest-mock==3.15.1
+numba==0.67.0
+scikit-learn==1.7.2

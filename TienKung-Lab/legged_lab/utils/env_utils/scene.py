@@ -75,7 +75,7 @@ class SceneCfg(InteractiveSceneCfg):
             prim_path="/World/skyLight",
             spawn=sim_utils.DomeLightCfg(
                 intensity=750.0,
-                texture_file=(
+                texture_file=getattr(config, "sky_texture_file",
                     f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr"
                 ),
             ),

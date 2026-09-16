@@ -295,7 +295,7 @@ class G1DwaqEnv(VecEnv):
         robot = self.robot
         
         # Get feet body IDs
-        feet_body_ids = self.feet_cfg.body_ids
+        feet_body_ids = getattr(self, "feet_body_ids", self.feet_cfg.body_ids)
         
         # Get feet positions in world frame
         feet_pos_w = robot.data.body_pos_w[:, feet_body_ids, :]  # (num_envs, num_feet, 3)
@@ -561,7 +561,7 @@ class G1DwaqEnv(VecEnv):
         robot_quat = self.robot.data.root_quat_w  # (num_envs, 4)
         
         # 获取脚的位置
-        feet_body_ids = self.feet_cfg.body_ids
+        feet_body_ids = getattr(self, "feet_body_ids", self.feet_cfg.body_ids)
         feet_pos = self.robot.data.body_pos_w[:, feet_body_ids, :]  # (num_envs, 2, 3)
         
         # 获取接触状态来判断哪只脚是支撑腿
@@ -612,7 +612,7 @@ class G1DwaqEnv(VecEnv):
         right_contact = is_contact[:, 1]  # (num_envs,)
         
         # 默认使用根部高度 - 0.78m 作为估计地形
-        root_terrain_estimate = (robot_pos[:, 2] - 0.78).clamp(min=0.0)
+        root_terrain_estimate = (robot_pos[:, 2] - getattr(self, "nominal_root_height", 0.78)).clamp(min=0.0)
         
         # 左脚的参考地形
         ref_terrain_left = torch.where(

@@ -83,7 +83,7 @@ def play():
     env_cfg.domain_rand.events.randomize_dome_light = None
     env_cfg.domain_rand.events.randomize_distant_light = None
     env_cfg.scene.max_episode_length_s = 40.0
-    env_cfg.scene.num_envs = 1
+    env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else 1
     env_cfg.scene.env_spacing = 6.0
     env_cfg.commands.rel_standing_envs = 0.0
     env_cfg.commands.ranges.lin_vel_x = (1.0, 1.0)
@@ -408,6 +408,10 @@ def play():
                     cv2.waitKey(1)  # Required for window to update
                 except Exception as e:
                     pass  # Silently ignore errors
+
+
+    if isinstance(env, Elf3DwaqEnv):
+        env.close()
 
 
 if __name__ == "__main__":

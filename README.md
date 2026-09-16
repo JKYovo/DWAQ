@@ -1,5 +1,7 @@
 # G1 DWAQ 盲走上台阶
 
+ELF3 本机环境、适配依据、训练/回放/导出及验证结果见 [README_ELF3.md](README_ELF3.md)。
+
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-5.1.0-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
 [![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.3.0-silver)](https://isaac-sim.github.io/IsaacLab)
 [![RSL_RL](https://img.shields.io/badge/RSL_RL-2.3.1-silver)](https://github.com/leggedrobotics/rsl_rl)

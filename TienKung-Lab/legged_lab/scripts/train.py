@@ -31,6 +31,10 @@ parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
+parser.add_argument("--swanlab_project", default=None, help="Mirror TensorBoard to this SwanLab project.")
+parser.add_argument("--swanlab_experiment_name", default=None)
+parser.add_argument("--swanlab_id", default=None)
+parser.add_argument("--swanlab_resume", choices=("never", "allow", "must"), default="never")
 
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
@@ -45,6 +49,8 @@ if args_cli.task and ("sensor" in args_cli.task or "rgb" in args_cli.task or "de
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 import os
+import json
+from pathlib import Path
 from datetime import datetime
 
 import torch
@@ -71,6 +77,8 @@ def train():
         env_cfg.scene.num_envs = args_cli.num_envs
 
     agent_cfg = update_rsl_rl_cfg(agent_cfg, args_cli)
+    if args_cli.swanlab_project and agent_cfg.logger.lower() != "tensorboard":
+        raise ValueError("SwanLab mirroring requires --logger=tensorboard")
     env_cfg.scene.seed = agent_cfg.seed
 
     if args_cli.distributed:
@@ -107,9 +115,38 @@ def train():
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
 
-    runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+    swanlab_run = None
+    try:
+        if args_cli.swanlab_project and int(os.environ.get("RANK", "0")) == 0:
+            import swanlab
+
+            swanlab_run = swanlab.init(
+                project=args_cli.swanlab_project,
+                name=args_cli.swanlab_experiment_name or Path(log_dir).name,
+                id=args_cli.swanlab_id, resume=args_cli.swanlab_resume,
+                mode="online", log_dir=str(Path(log_dir) / "swanlab"),
+                config={"task": args_cli.task, "num_envs": env_cfg.scene.num_envs,
+                        "seed": agent_cfg.seed, "max_iterations": agent_cfg.max_iterations},
+            )
+            # Same integration as Amp_mjlab, before learn() creates SummaryWriter.
+            swanlab.sync_tensorboard_torch()
+            (Path(log_dir) / "swanlab_run.json").write_text(json.dumps({
+                "id": swanlab_run.id, "url": swanlab_run.url,
+                "project": args_cli.swanlab_project, "mode": "native",
+            }, indent=2) + "\n")
+            print(f"[INFO] SwanLab experiment: {swanlab_run.url}")
+        runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+    finally:
+        if runner.writer is not None:
+            runner.writer.close()
+        if swanlab_run is not None:
+            swanlab_run.finish()
+        if isinstance(env, Elf3DwaqEnv):
+            env.close()
 
 
 if __name__ == "__main__":
-    train()
-    simulation_app.close()
+    try:
+        train()
+    finally:
+        simulation_app.close()
