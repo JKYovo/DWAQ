@@ -48,6 +48,15 @@ try:
     assert set(selected_names) == set(arm_names + ['waist_y_joint', 'waist_x_joint', 'waist_z_joint'])
     report['reward_joint_names'] = selected_names
     report['reward_weight'] = term.weight
+    shoulder_term = env.reward_manager.get_term_cfg('shoulder_pose_l2')
+    shoulder_selected = shoulder_term.params['asset_cfg']
+    shoulder_names = [robot.joint_names[i] for i in shoulder_selected.joint_ids]
+    expected_shoulders = [n for n in arm_names if 'shoulder' in n]
+    assert set(shoulder_names) == set(expected_shoulders)
+    report['shoulder_pose_l2'] = {
+        'joint_names': shoulder_names,
+        'weight': shoulder_term.weight,
+    }
 
     def set_pose(q):
         robot.write_root_pose_to_sim(root)
@@ -96,6 +105,31 @@ try:
         torch.testing.assert_close(obs[:, 67:96], actions * env.obs_scales.actions)
         action_checks[name] = float(target[0, robot.joint_names.index(name)])
     report['single_joint_target_offsets'] = action_checks
+
+    # Large policy outputs must not lift either shoulder_x beyond the symmetric
+    # safety envelope.  The constrained action is also what enters history.
+    set_pose(base)
+    actions = torch.zeros((env.num_envs, 29), device=device)
+    left_policy = JOINT_NAMES.index('l_shoulder_x_joint')
+    right_policy = JOINT_NAMES.index('r_shoulder_x_joint')
+    actions[:, left_policy] = 100.0
+    actions[:, right_policy] = -100.0
+    obs, _, _, _ = env.step(actions)
+    target = robot.data.joint_pos_target - base
+    limit = env.cfg.shoulder_x_max_deviation
+    left_sim = robot.joint_names.index('l_shoulder_x_joint')
+    right_sim = robot.joint_names.index('r_shoulder_x_joint')
+    torch.testing.assert_close(target[:, left_sim], torch.full_like(target[:, left_sim], limit), atol=1e-6, rtol=0)
+    torch.testing.assert_close(target[:, right_sim], torch.full_like(target[:, right_sim], -limit), atol=1e-6, rtol=0)
+    expected_action = limit / CONTRACT['action_scale']['l_shoulder_x_joint']
+    torch.testing.assert_close(obs[:, 67 + left_policy], torch.full_like(obs[:, 67 + left_policy], expected_action))
+    torch.testing.assert_close(obs[:, 67 + right_policy], torch.full_like(obs[:, 67 + right_policy], -expected_action))
+    report['shoulder_x_safety_bound'] = {
+        'max_deviation_rad': limit,
+        'normalized_action_limit': expected_action,
+    }
+    assert float(env.action_buffer._circular_buffer.buffer.abs().max()) <= env.cfg.policy_action_clip
+    report['policy_action_clip'] = env.cfg.policy_action_clip
 
     # Compare complete body transforms at multiple arm angles, not just link origins at home.
     model = mujoco.MjModel.from_xml_path(str(ASSET_DIR / 'xmls/elf3.xml'))

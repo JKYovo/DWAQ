@@ -26,6 +26,21 @@ class Elf3DwaqEnv(G1DwaqEnv):
         self.action_scale = torch.tensor(
             [CONTRACT["action_scale"][name] for name in self.robot.joint_names], device=self.device
         )
+        self.shoulder_x_policy_ids = torch.tensor(
+            [JOINT_NAMES.index("l_shoulder_x_joint"), JOINT_NAMES.index("r_shoulder_x_joint")],
+            device=self.device,
+        )
+        if self.cfg.policy_action_clip <= 0:
+            raise ValueError("policy_action_clip must be positive")
+        if self.cfg.shoulder_x_max_deviation <= 0:
+            raise ValueError("shoulder_x_max_deviation must be positive")
+        self.shoulder_x_action_limits = torch.tensor(
+            [
+                self.cfg.shoulder_x_max_deviation / CONTRACT["action_scale"]["l_shoulder_x_joint"],
+                self.cfg.shoulder_x_max_deviation / CONTRACT["action_scale"]["r_shoulder_x_joint"],
+            ],
+            device=self.device,
+        )
         feet_names = tuple(self.contact_sensor.body_names[i] for i in self.feet_cfg.body_ids)
         if feet_names != FOOT_BODIES:
             raise ValueError(f"ELF3 feet must be left then right: {feet_names}")
@@ -45,6 +60,15 @@ class Elf3DwaqEnv(G1DwaqEnv):
         return actor, critic
 
     def step(self, actions):
+        # Clamp before the delay buffer so observations contain the action that
+        # can actually reach the controller.  Keeping raw outliers in history
+        # creates a positive feedback loop through DWAQ's context encoder.
+        actions = torch.clamp(actions, -self.cfg.policy_action_clip, self.cfg.policy_action_clip)
+        actions[:, self.shoulder_x_policy_ids] = torch.clamp(
+            actions[:, self.shoulder_x_policy_ids],
+            min=-self.shoulder_x_action_limits,
+            max=self.shoulder_x_action_limits,
+        )
         return super().step(actions[:, self.sim_to_policy])
 
     def close(self):

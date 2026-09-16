@@ -83,6 +83,11 @@ class DWAQPPO:
         self.desired_kl = desired_kl
         self.schedule = schedule
         self.learning_rate = learning_rate
+        # The adaptive scheduler is evaluated once per mini-batch.  Without an
+        # upper bound tied to the configured rate it can climb from 1e-3 to
+        # 1e-2 inside one update when KL is small, which destabilizes DWAQ's
+        # shared policy/VAE optimizer.
+        self.max_learning_rate = learning_rate
 
         # PPO components
         self.policy = policy
@@ -281,7 +286,7 @@ class DWAQPPO:
                     if kl_mean > self.desired_kl * 2.0:
                         self.learning_rate = max(1e-5, self.learning_rate / 1.5)
                     elif kl_mean < self.desired_kl / 2.0 and kl_mean > 0.0:
-                        self.learning_rate = min(1e-2, self.learning_rate * 1.5)
+                        self.learning_rate = min(self.max_learning_rate, self.learning_rate * 1.5)
 
                     for param_group in self.optimizer.param_groups:
                         param_group["lr"] = self.learning_rate
