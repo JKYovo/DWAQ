@@ -66,3 +66,14 @@ class Elf3DwaqAgentCfg(G1DwaqAgentCfg):
 @configclass
 class Elf3DwaqFlatAgentCfg(Elf3DwaqAgentCfg):
     experiment_name: str = "elf3_dwaq_flat"
+
+
+@configclass
+class Elf3DwaqUpperBodySymmetryAgentCfg(Elf3DwaqAgentCfg):
+    """Independent 20k test; reward terms and control limits remain unchanged."""
+
+    max_iterations: int = 20000
+    experiment_name: str = "elf3_dwaq_upper_symmetry"
+    wandb_project: str = "elf3_dwaq_upper_symmetry"
+    runner_class_name: str = "Elf3DwaqUpperBodySymmetryRunner"
+    upper_body_mirror_loss_coeff: float = 0.1

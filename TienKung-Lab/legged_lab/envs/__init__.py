@@ -73,10 +73,17 @@ task_registry.register("g1_rough", G1Env, G1RoughEnvCfg(), G1RoughAgentCfg())
 task_registry.register("g1_dwaq", G1DwaqEnv, G1DwaqEnvCfg(), G1DwaqAgentCfg())
 
 from legged_lab.envs.elf3.elf3_dwaq_env import Elf3DwaqEnv
-from legged_lab.envs.elf3.runner import Elf3DwaqOnPolicyRunner
+from legged_lab.envs.elf3.runner import Elf3DwaqOnPolicyRunner, Elf3DwaqUpperBodySymmetryRunner
 from legged_lab.envs.elf3.elf3_dwaq_config import (
     Elf3DwaqAgentCfg, Elf3DwaqEnvCfg, Elf3DwaqFlatAgentCfg, Elf3DwaqFlatEnvCfg,
+    Elf3DwaqUpperBodySymmetryAgentCfg,
 )
 
 task_registry.register("elf3_dwaq", Elf3DwaqEnv, Elf3DwaqEnvCfg(), Elf3DwaqAgentCfg())
 task_registry.register("elf3_dwaq_flat", Elf3DwaqEnv, Elf3DwaqFlatEnvCfg(), Elf3DwaqFlatAgentCfg())
+task_registry.register(
+    "elf3_dwaq_upper_symmetry",
+    Elf3DwaqEnv,
+    Elf3DwaqEnvCfg(),
+    Elf3DwaqUpperBodySymmetryAgentCfg(),
+)

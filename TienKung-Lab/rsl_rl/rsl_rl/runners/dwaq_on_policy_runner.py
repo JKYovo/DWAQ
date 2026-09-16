@@ -270,6 +270,7 @@ class DWAQOnPolicyRunner:
             mean_value_loss = loss_dict["value_function"]
             mean_surrogate_loss = loss_dict["surrogate"]
             mean_autoenc_loss = loss_dict["autoencoder"]
+            mean_symmetry_loss = loss_dict.get("upper_body_symmetry")
             stop = time.time()
             learn_time = stop - start
 
@@ -334,6 +335,8 @@ class DWAQOnPolicyRunner:
         self.writer.add_scalar("Loss/surrogate", locs["mean_surrogate_loss"], locs["it"])
         self.writer.add_scalar("Loss/autoencoder", locs["mean_autoenc_loss"], locs["it"])
         self.writer.add_scalar("Loss/learning_rate", self.alg.learning_rate, locs["it"])
+        if locs.get("mean_symmetry_loss") is not None:
+            self.writer.add_scalar("Loss/upper_body_symmetry", locs["mean_symmetry_loss"], locs["it"])
 
         # Log policy stats
         self.writer.add_scalar("Policy/mean_noise_std", mean_std.item(), locs["it"])
@@ -355,6 +358,11 @@ class DWAQOnPolicyRunner:
 
         # Console output
         header = f" \033[1m Learning iteration {locs['it']}/{locs['tot_iter']} \033[0m "
+        symmetry_string = (
+            f"""{'Upper-body symmetry loss:':>{pad}} {locs['mean_symmetry_loss']:.4f}\n"""
+            if locs.get("mean_symmetry_loss") is not None
+            else ""
+        )
 
         if len(locs["rewbuffer"]) > 0:
             log_string = (
@@ -364,7 +372,8 @@ class DWAQOnPolicyRunner:
                 f"""{'Value function loss:':>{pad}} {locs['mean_value_loss']:.4f}\n"""
                 f"""{'Surrogate loss:':>{pad}} {locs['mean_surrogate_loss']:.4f}\n"""
                 f"""{'Autoencoder loss:':>{pad}} {locs['mean_autoenc_loss']:.4f}\n"""
-                f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
+                + symmetry_string
+                + f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
                 f"""{'Mean reward:':>{pad}} {statistics.mean(locs['rewbuffer']):.2f}\n"""
                 f"""{'Mean episode length:':>{pad}} {statistics.mean(locs['lenbuffer']):.2f}\n"""
             )
@@ -376,7 +385,8 @@ class DWAQOnPolicyRunner:
                 f"""{'Value function loss:':>{pad}} {locs['mean_value_loss']:.4f}\n"""
                 f"""{'Surrogate loss:':>{pad}} {locs['mean_surrogate_loss']:.4f}\n"""
                 f"""{'Autoencoder loss:':>{pad}} {locs['mean_autoenc_loss']:.4f}\n"""
-                f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
+                + symmetry_string
+                + f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
             )
 
         log_string += ep_string

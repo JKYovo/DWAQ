@@ -202,6 +202,14 @@ class ActorCritic_DWAQ(nn.Module):
         actions_mean = self.actor(observations)
         return actions_mean
 
+    def deterministic_action_mean(self, observations, obs_history):
+        """Return the actor mean using encoder means instead of sampled latents."""
+        encoded = self.encoder(obs_history)
+        mean_vel = self.encode_mean_vel(encoded)
+        mean_latent = self.encode_mean_latent(encoded)
+        code = torch.cat((mean_vel, mean_latent), dim=-1)
+        return self.actor(torch.cat((code, observations), dim=-1))
+
     def evaluate(self, critic_observations, **kwargs):
         """Evaluate critic value for given observations."""
         value = self.critic(critic_observations)
