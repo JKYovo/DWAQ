@@ -70,10 +70,19 @@ class Elf3DwaqFlatAgentCfg(Elf3DwaqAgentCfg):
 
 @configclass
 class Elf3DwaqUpperBodySymmetryAgentCfg(Elf3DwaqAgentCfg):
-    """Independent 20k test; reward terms and control limits remain unchanged."""
+    """Independent 20k mirror-only test; rewards and control limits remain unchanged."""
 
     max_iterations: int = 20000
     experiment_name: str = "elf3_dwaq_upper_symmetry"
     wandb_project: str = "elf3_dwaq_upper_symmetry"
     runner_class_name: str = "Elf3DwaqUpperBodySymmetryRunner"
     upper_body_mirror_loss_coeff: float = 0.1
+
+
+@configclass
+class Elf3DwaqUpperBodySymmetryPoseAgentCfg(Elf3DwaqUpperBodySymmetryAgentCfg):
+    """Independent 20k test adding a soft default-pose loss to mirrored arm actions."""
+
+    experiment_name: str = "elf3_dwaq_upper_symmetry_pose"
+    wandb_project: str = "elf3_dwaq_upper_symmetry_pose"
+    upper_body_pose_loss_coeff: float = 0.02

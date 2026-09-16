@@ -42,15 +42,35 @@ policy = ActorCritic_DWAQ(
 )
 algorithm = DWAQPPO(policy=policy, obs_dim=100)
 algorithm.configure_upper_body_symmetry(
-    mirror_observations, mirror_history, mirror_actions, ARM_ACTION_IDS, coefficient=0.1
+    mirror_observations,
+    mirror_history,
+    mirror_actions,
+    ARM_ACTION_IDS,
+    coefficient=0.1,
+    pose_coefficient=0.02,
 )
-loss = algorithm._upper_body_symmetry_loss(obs, history)
-assert loss.isfinite() and loss.item() >= 0
-loss.backward()
+symmetry_loss = algorithm._upper_body_symmetry_loss(obs, history)
+pose_loss = algorithm._upper_body_pose_loss(obs, history)
+assert symmetry_loss.isfinite() and symmetry_loss.item() >= 0
+assert pose_loss.isfinite() and pose_loss.item() >= 0
+(symmetry_loss + pose_loss).backward()
 output_weight_grad = policy.actor[-1].weight.grad
 assert torch.isfinite(output_weight_grad).all()
 assert torch.count_nonzero(output_weight_grad[:15]) == 0
 assert torch.count_nonzero(output_weight_grad[15:]) > 0
 
-print({"status": "passed", "raw_upper_body_symmetry_loss": loss.item(), "arm_action_ids": ARM_ACTION_IDS})
+# A-test inference is deterministic even though the training path samples VAE codes.
+inference_a = policy.act_inference(obs, history)
+inference_b = policy.act_inference(obs, history)
+torch.testing.assert_close(inference_a, inference_b, rtol=0, atol=0)
+
+print(
+    {
+        "status": "passed",
+        "raw_upper_body_symmetry_loss": symmetry_loss.item(),
+        "raw_upper_body_pose_loss": pose_loss.item(),
+        "deterministic_inference": True,
+        "arm_action_ids": ARM_ACTION_IDS,
+    }
+)
 simulation_app.close()

@@ -110,16 +110,20 @@ class DWAQPPO:
         mirror_actions,
         action_ids,
         coefficient: float,
+        pose_coefficient: float = 0.0,
     ) -> None:
-        """Enable an optional actor mirror loss; standard DWAQ remains unchanged."""
+        """Enable optional arm mirror and default-pose losses; standard DWAQ remains unchanged."""
         if coefficient <= 0:
             raise ValueError("Upper-body mirror-loss coefficient must be positive")
+        if pose_coefficient < 0:
+            raise ValueError("Upper-body pose-loss coefficient cannot be negative")
         self.upper_body_symmetry = {
             "mirror_observations": mirror_observations,
             "mirror_history": mirror_history,
             "mirror_actions": mirror_actions,
             "action_ids": tuple(action_ids),
             "coefficient": coefficient,
+            "pose_coefficient": pose_coefficient,
         }
 
     def _upper_body_symmetry_loss(self, observations, observation_history):
@@ -134,6 +138,14 @@ class DWAQPPO:
         mirrored_target = cfg["mirror_actions"](original_mean).detach()
         action_ids = cfg["action_ids"]
         return nn.functional.mse_loss(mirrored_mean[:, action_ids], mirrored_target[:, action_ids])
+
+    def _upper_body_pose_loss(self, observations, observation_history):
+        """Penalize deterministic arm action offsets while leaving waist and legs unconstrained."""
+        if self.upper_body_symmetry is None or self.upper_body_symmetry["pose_coefficient"] == 0:
+            return None
+        action_ids = self.upper_body_symmetry["action_ids"]
+        action_mean = self.policy.deterministic_action_mean(observations, observation_history)
+        return torch.square(action_mean[:, action_ids]).mean()
 
     def init_storage(
         self,
@@ -266,6 +278,11 @@ class DWAQPPO:
         mean_surrogate_loss = 0.0
         mean_autoenc_loss = 0.0
         mean_symmetry_loss = 0.0 if self.upper_body_symmetry is not None else None
+        mean_pose_loss = (
+            0.0
+            if self.upper_body_symmetry is not None and self.upper_body_symmetry["pose_coefficient"] > 0
+            else None
+        )
 
         # Generator for mini batches
         generator = self.storage.mini_batch_generator(
@@ -395,6 +412,9 @@ class DWAQPPO:
             symmetry_loss = self._upper_body_symmetry_loss(obs_batch, obs_hist_batch)
             if symmetry_loss is not None:
                 loss = loss + self.upper_body_symmetry["coefficient"] * symmetry_loss
+            pose_loss = self._upper_body_pose_loss(obs_batch, obs_hist_batch)
+            if pose_loss is not None:
+                loss = loss + self.upper_body_symmetry["pose_coefficient"] * pose_loss
 
             # Gradient step
             self.optimizer.zero_grad()
@@ -408,6 +428,8 @@ class DWAQPPO:
             mean_autoenc_loss += autoenc_loss.item()
             if mean_symmetry_loss is not None:
                 mean_symmetry_loss += symmetry_loss.item()
+            if mean_pose_loss is not None:
+                mean_pose_loss += pose_loss.item()
 
         # Average losses
         num_updates = self.num_learning_epochs * self.num_mini_batches
@@ -415,6 +437,8 @@ class DWAQPPO:
         mean_surrogate_loss /= num_updates
         if mean_symmetry_loss is not None:
             mean_symmetry_loss /= num_updates
+        if mean_pose_loss is not None:
+            mean_pose_loss /= num_updates
 
 
         # Clear storage
@@ -428,5 +452,7 @@ class DWAQPPO:
         }
         if mean_symmetry_loss is not None:
             loss_dict["upper_body_symmetry"] = mean_symmetry_loss
+        if mean_pose_loss is not None:
+            loss_dict["upper_body_pose"] = mean_pose_loss
 
         return loss_dict

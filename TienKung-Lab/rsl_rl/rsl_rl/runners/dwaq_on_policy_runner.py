@@ -271,6 +271,7 @@ class DWAQOnPolicyRunner:
             mean_surrogate_loss = loss_dict["surrogate"]
             mean_autoenc_loss = loss_dict["autoencoder"]
             mean_symmetry_loss = loss_dict.get("upper_body_symmetry")
+            mean_pose_loss = loss_dict.get("upper_body_pose")
             stop = time.time()
             learn_time = stop - start
 
@@ -337,6 +338,8 @@ class DWAQOnPolicyRunner:
         self.writer.add_scalar("Loss/learning_rate", self.alg.learning_rate, locs["it"])
         if locs.get("mean_symmetry_loss") is not None:
             self.writer.add_scalar("Loss/upper_body_symmetry", locs["mean_symmetry_loss"], locs["it"])
+        if locs.get("mean_pose_loss") is not None:
+            self.writer.add_scalar("Loss/upper_body_pose", locs["mean_pose_loss"], locs["it"])
 
         # Log policy stats
         self.writer.add_scalar("Policy/mean_noise_std", mean_std.item(), locs["it"])
@@ -363,6 +366,11 @@ class DWAQOnPolicyRunner:
             if locs.get("mean_symmetry_loss") is not None
             else ""
         )
+        pose_string = (
+            f"""{'Upper-body pose loss:':>{pad}} {locs['mean_pose_loss']:.4f}\n"""
+            if locs.get("mean_pose_loss") is not None
+            else ""
+        )
 
         if len(locs["rewbuffer"]) > 0:
             log_string = (
@@ -373,6 +381,7 @@ class DWAQOnPolicyRunner:
                 f"""{'Surrogate loss:':>{pad}} {locs['mean_surrogate_loss']:.4f}\n"""
                 f"""{'Autoencoder loss:':>{pad}} {locs['mean_autoenc_loss']:.4f}\n"""
                 + symmetry_string
+                + pose_string
                 + f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
                 f"""{'Mean reward:':>{pad}} {statistics.mean(locs['rewbuffer']):.2f}\n"""
                 f"""{'Mean episode length:':>{pad}} {statistics.mean(locs['lenbuffer']):.2f}\n"""
@@ -386,6 +395,7 @@ class DWAQOnPolicyRunner:
                 f"""{'Surrogate loss:':>{pad}} {locs['mean_surrogate_loss']:.4f}\n"""
                 f"""{'Autoencoder loss:':>{pad}} {locs['mean_autoenc_loss']:.4f}\n"""
                 + symmetry_string
+                + pose_string
                 + f"""{'Mean action noise std:':>{pad}} {mean_std.item():.2f}\n"""
             )
 

@@ -43,19 +43,28 @@ class Elf3DwaqUpperBodySymmetryRunner(Elf3DwaqOnPolicyRunner):
     def __init__(self, env, train_cfg, log_dir=None, device="cpu"):
         super().__init__(env, train_cfg, log_dir=log_dir, device=device)
         coefficient = float(train_cfg["upper_body_mirror_loss_coeff"])
+        pose_coefficient = float(train_cfg.get("upper_body_pose_loss_coeff", 0.0))
         self.alg.configure_upper_body_symmetry(
             mirror_observations=mirror_observations,
             mirror_history=mirror_history,
             mirror_actions=mirror_actions,
             action_ids=ARM_ACTION_IDS,
             coefficient=coefficient,
+            pose_coefficient=pose_coefficient,
         )
 
     def contract(self):
         contract = super().contract()
-        contract["upper_body_symmetry"] = {
+        symmetry_contract = {
             "action_joint_names": CONTRACT["joint_names"][15:],
             "mirror_loss_coeff": float(self.cfg["upper_body_mirror_loss_coeff"]),
             "observation_mirror": "sagittal_full_history",
         }
+        pose_coefficient = float(self.cfg.get("upper_body_pose_loss_coeff", 0.0))
+        if pose_coefficient > 0:
+            symmetry_contract.update({
+                "pose_loss_coeff": pose_coefficient,
+                "pose_target": "zero_normalized_action_offset",
+            })
+        contract["upper_body_symmetry"] = symmetry_contract
         return contract

@@ -197,10 +197,7 @@ class ActorCritic_DWAQ(nn.Module):
         Returns:
             Mean actions (deterministic)
         """
-        code, _, _, _, _, _, _ = self.cenet_forward(obs_history)
-        observations = torch.cat((code, observations), dim=-1)
-        actions_mean = self.actor(observations)
-        return actions_mean
+        return self.deterministic_action_mean(observations, obs_history)
 
     def deterministic_action_mean(self, observations, obs_history):
         """Return the actor mean using encoder means instead of sampled latents."""
