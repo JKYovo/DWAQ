@@ -28,6 +28,8 @@ inherit from ``isaaclab.terrains.terrains_cfg.TerrainConfig`` and define the fol
 import isaaclab.terrains as terrain_gen
 from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
 
+from .staged_terrain_generator import StagedStairsTerrainGenerator
+
 GRAVEL_TERRAINS_CFG = TerrainGeneratorCfg(
     curriculum=False,
     size=(8.0, 8.0),
@@ -46,19 +48,22 @@ GRAVEL_TERRAINS_CFG = TerrainGeneratorCfg(
 )
 
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
+    class_type=StagedStairsTerrainGenerator,
     curriculum=True,
     size=(8.0, 8.0),
     border_width=20.0,
-    num_rows=10,
+    # Levels 0-9 preserve the original curriculum. Levels 10-16 extend only
+    # the stairs by 1 cm per level, reaching 30 cm at level 16.
+    num_rows=17,
     num_cols=20,
     horizontal_scale=0.1,
     vertical_scale=0.005,
     slope_threshold=0.75,
     use_cache=False,
     sub_terrains={
-        # ========== 上台阶 (中心高，向外下降) - 20% ==========
+        # ========== 上台阶 (中心高，向外下降) - 27.5% ==========
         "stairs_up_28": terrain_gen.MeshPyramidStairsTerrainCfg(
-            proportion=0.1,
+            proportion=0.1375,
             step_height_range=(0.0, 0.23),
             step_width=0.28,
             platform_width=3.0,
@@ -66,16 +71,16 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             holes=False,
         ),
         "stairs_up_32": terrain_gen.MeshPyramidStairsTerrainCfg(
-            proportion=0.1,
+            proportion=0.1375,
             step_height_range=(0.0, 0.23),
             step_width=0.32,
             platform_width=3.0,
             border_width=1.0,
             holes=False,
         ),
-        # ========== 下台阶 (中心低，向外上升) - 20% ==========
+        # ========== 下台阶 (中心低，向外上升) - 27.5% ==========
         "stairs_down_30": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
-            proportion=0.1,
+            proportion=0.1375,
             step_height_range=(0.0, 0.23),
             step_width=0.30,
             platform_width=3.0,
@@ -83,14 +88,14 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             holes=False,
         ),
         "stairs_down_34": terrain_gen.MeshInvertedPyramidStairsTerrainCfg(
-            proportion=0.1,
+            proportion=0.1375,
             step_height_range=(0.0, 0.23),
             step_width=0.34,
             platform_width=3.0,
             border_width=1.0,
             holes=False,
         ),
-        # ========== 其他地形 - 60% ==========
+        # ========== 其他可由本体感觉恢复的地形 - 45% ==========
         "boxes": terrain_gen.MeshRandomGridTerrainCfg(
             proportion=0.1, grid_width=0.45, grid_height_range=(0.0, 0.15), platform_width=2.0
         ),
@@ -103,9 +108,8 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
         "slope": terrain_gen.HfPyramidSlopedTerrainCfg(
             proportion=0.1, slope_range=(0.0, 0.3), platform_width=2.0, inverted=False
         ),
-        "high_platform": terrain_gen.MeshPitTerrainCfg(
-            proportion=0.15, pit_depth_range=(0.0, 0.3), platform_width=2.0, double_pit=True
-        ),
+        # Blind locomotion cannot anticipate a wide pit before contact. Keep the
+        # curriculum focused on proprioceptively recoverable terrain instead.
         # "gap": terrain_gen.MeshGapTerrainCfg(
         #     proportion=0.1, gap_width_range=(0.1, 0.4), platform_width=2.0
         # ),
@@ -429,4 +433,3 @@ STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
         ),
     },
 )
-
