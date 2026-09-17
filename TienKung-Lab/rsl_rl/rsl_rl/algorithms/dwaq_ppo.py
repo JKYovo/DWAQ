@@ -49,6 +49,8 @@ class DWAQPPO:
         value_loss_coef: float = 1.0,
         entropy_coef: float = 0.0,
         learning_rate: float = 1e-3,
+        min_learning_rate: float = 1e-5,
+        max_learning_rate: float = 3e-4,
         max_grad_norm: float = 1.0,
         use_clipped_value_loss: bool = True,
         schedule: str = "fixed",
@@ -68,6 +70,8 @@ class DWAQPPO:
             value_loss_coef: Value loss coefficient.
             entropy_coef: Entropy bonus coefficient.
             learning_rate: Learning rate for optimizer.
+            min_learning_rate: Lower bound for the adaptive learning rate.
+            max_learning_rate: Upper bound for the adaptive learning rate.
             max_grad_norm: Maximum gradient norm for clipping.
             use_clipped_value_loss: Whether to use clipped value loss.
             schedule: Learning rate schedule ("fixed" or "adaptive").
@@ -82,13 +86,17 @@ class DWAQPPO:
         # Learning rate schedule parameters
         self.desired_kl = desired_kl
         self.schedule = schedule
-        self.learning_rate = learning_rate
+        if not 0 < min_learning_rate <= max_learning_rate:
+            raise ValueError("Expected 0 < min_learning_rate <= max_learning_rate")
+        self.min_learning_rate = min_learning_rate
+        self.max_learning_rate = max_learning_rate
+        self.learning_rate = min(max(learning_rate, min_learning_rate), max_learning_rate)
 
         # PPO components
         self.policy = policy
         self.policy.to(self.device)
         self.storage: RolloutStorageDWAQ | None = None  # initialized later
-        self.optimizer = optim.Adam(self.policy.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.policy.parameters(), lr=self.learning_rate)
         self.transition = RolloutStorageDWAQ.Transition()
 
         # PPO parameters
@@ -102,6 +110,17 @@ class DWAQPPO:
         self.max_grad_norm = max_grad_norm
         self.use_clipped_value_loss = use_clipped_value_loss
         self.upper_body_symmetry = None
+
+    @staticmethod
+    def _require_finite(name: str, value: torch.Tensor) -> None:
+        if not torch.isfinite(value).all():
+            raise FloatingPointError(f"Non-finite {name} detected; refusing to update the policy")
+
+    def validate_policy_parameters(self) -> None:
+        """Fail before a corrupt policy can be used or saved."""
+        for name, parameter in self.policy.named_parameters():
+            if not torch.isfinite(parameter).all():
+                raise FloatingPointError(f"Non-finite policy parameter: {name}")
 
     def configure_upper_body_symmetry(
         self,
@@ -328,11 +347,12 @@ class DWAQPPO:
                         axis=-1,
                     )
                     kl_mean = torch.mean(kl)
+                    self._require_finite("adaptive KL", kl_mean)
 
                     if kl_mean > self.desired_kl * 2.0:
-                        self.learning_rate = max(1e-5, self.learning_rate / 1.5)
+                        self.learning_rate = max(self.min_learning_rate, self.learning_rate / 1.5)
                     elif kl_mean < self.desired_kl / 2.0 and kl_mean > 0.0:
-                        self.learning_rate = min(1e-2, self.learning_rate * 1.5)
+                        self.learning_rate = min(self.max_learning_rate, self.learning_rate * 1.5)
 
                     for param_group in self.optimizer.param_groups:
                         param_group["lr"] = self.learning_rate
@@ -362,26 +382,17 @@ class DWAQPPO:
 
             # Autoencoder loss: velocity prediction + reconstruction + KL divergence
             # 
-            # CRITICAL: Match Reference implementation exactly!
-            # Reference: (MSE_vel + MSE_decode + beta * KL) / num_mini_batches
-            # 
-            # The division by num_mini_batches is intentional:
-            # - We call optimizer.step() for EACH mini-batch (same as Reference)
-            # - The KL uses torch.sum() over ALL elements (batch + latent dims)
-            # - Dividing by num_mini_batches ensures that when summed across all
-            #   mini-batches in an epoch, the total KL contribution equals one
-            #   full batch's KL divergence
-            
-            # Clamp logvar to prevent exp() overflow causing NaN
+            # Normalize KL per sample so its scale does not grow with the number
+            # of environments or mini-batch size.
             logvar_latent_clamped = torch.clamp(logvar_latent, min=-10.0, max=10.0)
-            kl_divergence = -0.5 * torch.sum(
+            kl_divergence = -0.5 * (
                 1 + logvar_latent_clamped - mean_latent.pow(2) - logvar_latent_clamped.exp()
-            )
+            ).sum(dim=-1).mean()
             autoenc_loss = (
-                nn.MSELoss()(code_vel, vel_target)
+                nn.MSELoss()(mean_vel, vel_target)
                 + nn.MSELoss()(decode, decode_target)
                 + beta * kl_divergence
-            ) / self.num_mini_batches
+            )
 
             # Surrogate loss (PPO clipped objective)
             ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))
@@ -417,10 +428,14 @@ class DWAQPPO:
                 loss = loss + self.upper_body_symmetry["pose_coefficient"] * pose_loss
 
             # Gradient step
+            self._require_finite("total loss", loss)
             self.optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+            nn.utils.clip_grad_norm_(
+                self.policy.parameters(), self.max_grad_norm, error_if_nonfinite=True
+            )
             self.optimizer.step()
+            self.validate_policy_parameters()
 
             # Accumulate losses
             mean_value_loss += value_loss.item()
@@ -435,6 +450,7 @@ class DWAQPPO:
         num_updates = self.num_learning_epochs * self.num_mini_batches
         mean_value_loss /= num_updates
         mean_surrogate_loss /= num_updates
+        mean_autoenc_loss /= num_updates
         if mean_symmetry_loss is not None:
             mean_symmetry_loss /= num_updates
         if mean_pose_loss is not None:

@@ -113,7 +113,8 @@ class DWAQOnPolicyRunner:
         dwaq_alg_supported_params = [
             "num_learning_epochs", "num_mini_batches", "clip_param",
             "gamma", "lam", "value_loss_coef", "entropy_coef",
-            "learning_rate", "max_grad_norm", "use_clipped_value_loss",
+            "learning_rate", "min_learning_rate", "max_learning_rate",
+            "max_grad_norm", "use_clipped_value_loss",
             "schedule", "desired_kl",
         ]
         filtered_alg_cfg = {k: v for k, v in self.alg_cfg.items() if k in dwaq_alg_supported_params}
@@ -411,6 +412,7 @@ class DWAQOnPolicyRunner:
 
     def save(self, path: str, infos=None):
         """Save model checkpoint."""
+        self.alg.validate_policy_parameters()
         saved_dict = {
             "model_state_dict": self.alg.policy.state_dict(),
             "optimizer_state_dict": self.alg.optimizer.state_dict(),
@@ -440,6 +442,19 @@ class DWAQOnPolicyRunner:
 
         if load_optimizer:
             self.alg.optimizer.load_state_dict(loaded_dict["optimizer_state_dict"])
+            for state in self.alg.optimizer.state.values():
+                for name, value in state.items():
+                    if torch.is_tensor(value) and not torch.isfinite(value).all():
+                        raise FloatingPointError(f"Non-finite optimizer state in checkpoint: {name}")
+
+            loaded_lr = self.alg.optimizer.param_groups[0]["lr"]
+            self.alg.learning_rate = min(
+                max(loaded_lr, self.alg.min_learning_rate), self.alg.max_learning_rate
+            )
+            for param_group in self.alg.optimizer.param_groups:
+                param_group["lr"] = self.alg.learning_rate
+
+        self.alg.validate_policy_parameters()
 
         # Load normalizer state if available
         if self.empirical_normalization and "obs_norm_state_dict" in loaded_dict:
