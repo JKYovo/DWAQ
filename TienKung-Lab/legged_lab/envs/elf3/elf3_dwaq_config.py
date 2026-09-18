@@ -89,8 +89,8 @@ class Elf3DwaqUpperBodySymmetryPoseAgentCfg(Elf3DwaqUpperBodySymmetryAgentCfg):
 
     def __post_init__(self):
         super().__post_init__()
-        # The old adaptive schedule reached 1e-2 immediately before the
-        # numerical collapse. Resume conservatively after resetting Adam.
+        # Keep the corrected VAE loss and numerical guards while using the
+        # original adaptive learning-rate bounds.
         self.algorithm.learning_rate = 1.0e-4
         self.algorithm.min_learning_rate = 1.0e-5
-        self.algorithm.max_learning_rate = 3.0e-4
+        self.algorithm.max_learning_rate = 1.0e-2

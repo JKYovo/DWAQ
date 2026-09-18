@@ -50,7 +50,7 @@ class DWAQPPO:
         entropy_coef: float = 0.0,
         learning_rate: float = 1e-3,
         min_learning_rate: float = 1e-5,
-        max_learning_rate: float = 3e-4,
+        max_learning_rate: float = 1e-2,
         max_grad_norm: float = 1.0,
         use_clipped_value_loss: bool = True,
         schedule: str = "fixed",
