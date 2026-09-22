@@ -56,6 +56,17 @@ class Elf3DwaqFlatEnvCfg(Elf3DwaqEnvCfg):
 
 
 @configclass
+class Elf3DwaqDelayEnvCfg(Elf3DwaqEnvCfg):
+    """ELF3 DWAQ fine-tuning with 0/20/40 ms coherent action delays."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.domain_rand.action_delay.enable = True
+        # One delay step is one 50 Hz policy period (20 ms).
+        self.domain_rand.action_delay.params = {"min_delay": 0, "max_delay": 2}
+
+
+@configclass
 class Elf3DwaqAgentCfg(G1DwaqAgentCfg):
     max_iterations: int = 100001
     experiment_name: str = "elf3_dwaq"
@@ -91,6 +102,6 @@ class Elf3DwaqUpperBodySymmetryPoseAgentCfg(Elf3DwaqUpperBodySymmetryAgentCfg):
         super().__post_init__()
         # Keep the corrected VAE loss and numerical guards while using the
         # original adaptive learning-rate bounds.
-        self.algorithm.learning_rate = 1.0e-4
+        self.algorithm.learning_rate = 1.0e-3
         self.algorithm.min_learning_rate = 1.0e-5
         self.algorithm.max_learning_rate = 1.0e-2

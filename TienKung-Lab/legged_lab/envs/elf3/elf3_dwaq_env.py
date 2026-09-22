@@ -45,7 +45,24 @@ class Elf3DwaqEnv(G1DwaqEnv):
         return actor, critic
 
     def step(self, actions):
+        # G1DwaqEnv clips only after the action-delay buffer. Clamp with the
+        # existing configured limit before buffering as well, so rewards and
+        # observation history see the same bounded command as the controller.
+        actions = torch.clamp(actions, -self.clip_actions, self.clip_actions)
         return super().step(actions[:, self.sim_to_policy])
+
+    def reset(self, env_ids):
+        super().reset(env_ids)
+        if len(env_ids) and self.cfg.domain_rand.action_delay.enable:
+            params = self.cfg.domain_rand.action_delay.params
+            time_lags = torch.randint(
+                low=params["min_delay"],
+                high=params["max_delay"] + 1,
+                size=(len(env_ids),),
+                dtype=torch.int,
+                device=self.device,
+            )
+            self.action_buffer.set_time_lag(time_lags, env_ids)
 
     def close(self):
         """Unsubscribe standalone timeline callbacks before closing the stage."""
