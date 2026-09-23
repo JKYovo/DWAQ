@@ -80,7 +80,7 @@ ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 
 ```bash
 ./elf3.sh TienKung-Lab/legged_lab/scripts/train.py \
-  --task=elf3_dwaq_upper_symmetry_pose \
+  --task=elf3_dwaq_upper_symmetry_pose_delay \
   --headless \
   --num_envs=4096 \
   --seed=42 \
@@ -94,7 +94,7 @@ ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 训练日志保存在：
 
 ```text
-logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
+logs/elf3_dwaq_upper_symmetry_pose_delay/<时间戳>_<run_name>/
 ```
 
 默认每 100 轮保存一次 checkpoint。`max_iterations` 在续训时表示本次追加的更新次数，不是绝对终点。
@@ -103,7 +103,7 @@ logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
 
 ```bash
 ./elf3.sh TienKung-Lab/legged_lab/scripts/train.py \
-  --task=elf3_dwaq_upper_symmetry_pose \
+  --task=elf3_dwaq_upper_symmetry_pose_delay \
   --headless \
   --num_envs=4096 \
   --seed=42 \
@@ -136,7 +136,7 @@ logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
 
 ```bash
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose \
+  --task=elf3_dwaq_upper_symmetry_pose_delay \
   --num_envs=20 \
   --load_run=<运行目录名> \
   --checkpoint=model_100000.pt \
@@ -152,12 +152,12 @@ logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
 ```bash
 # 平地
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose --terrain=flat \
+  --task=elf3_dwaq_upper_symmetry_pose_delay --terrain=flat \
   --load_run=<运行目录名> --checkpoint=model_100000.pt
 
 # 纯台阶
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose --terrain=stairs --difficulty=1.0 \
+  --task=elf3_dwaq_upper_symmetry_pose_delay --terrain=stairs --difficulty=1.0 \
   --load_run=<运行目录名> --checkpoint=model_100000.pt
 ```
 
@@ -185,7 +185,7 @@ DWAQ 历史输入为 5 帧，共 500 维，顺序为旧帧到新帧。Actor 输�
 
 ```bash
 .venv/bin/python scripts/export_elf3_dwaq.py \
-  --checkpoint logs/elf3_dwaq_upper_symmetry_pose/<运行目录>/model_100000.pt \
+  --checkpoint logs/elf3_dwaq_upper_symmetry_pose_delay/<运行目录>/model_100000.pt \
   --output artifacts/elf3_dwaq_model_100000
 ```
 
