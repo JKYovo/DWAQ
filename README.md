@@ -27,26 +27,8 @@
 推荐任务：
 
 ```text
-elf3_dwaq_upper_symmetry_pose
+elf3_dwaq_upper_symmetry_pose_delay
 ```
-
-它在基础 ELF3 DWAQ 上增加：
-
-- 上身镜像损失系数：`0.1`
-- 上身软姿态损失系数：`0.02`
-- 初始学习率：`1e-3`（当前配置；历史 10 万轮基线请看对应标签）
-- 自适应学习率下限：`1e-5`
-- 自适应学习率上限：`1e-2`（原项目默认值）
-
-其他可用任务：
-
-| 任务 | 用途 |
-| --- | --- |
-| `elf3_dwaq` | 基础粗糙地形 DWAQ |
-| `elf3_dwaq_flat` | 平地 DWAQ |
-| `elf3_dwaq_upper_symmetry` | 仅增加上身镜像损失 |
-| `elf3_dwaq_upper_symmetry_pose` | 镜像损失 + 软姿态损失，推荐 |
-| `elf3_dwaq_upper_symmetry_pose_delay` | 以上配置 + 每次重置随机 0/20/40 ms 动作延迟，本地改进版 |
 
 ## 环境
 
