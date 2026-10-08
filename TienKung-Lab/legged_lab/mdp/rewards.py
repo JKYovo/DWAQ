@@ -493,6 +493,41 @@ def joint_pos_limits(
     return torch.sum(out_of_limits, dim=-1)
 
 
+def command_velocity_shortfall(
+    env: BaseEnv | TienKungEnv | G1Env,
+    lin_cmd_threshold: float = 0.05,
+    ang_cmd_threshold: float = 0.1,
+    speed_fraction: float = 0.8,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Bounded motion shortfall along translation and signed yaw commands.
+
+    Reaching ``speed_fraction`` of the requested speed removes this penalty;
+    the tracking rewards still target the full command and penalize overshoot.
+    Lateral drift cannot satisfy a forward command, nor can opposite rotation
+    satisfy a yaw command. Zero commands are inactive. Taking the maximum keeps
+    the penalty in [0, 1] for simultaneous translation and rotation as well.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command = env.command_generator.command
+    vel_yaw = math_utils.quat_apply_inverse(
+        math_utils.yaw_quat(asset.data.root_quat_w), asset.data.root_lin_vel_w[:, :3]
+    )
+    lin_magnitude = torch.linalg.vector_norm(command[:, :2], dim=-1)
+    commanded_direction = command[:, :2] / lin_magnitude.clamp_min(1e-6).unsqueeze(-1)
+    projected_speed = torch.sum(vel_yaw[:, :2] * commanded_direction, dim=-1)
+    lin_target = (speed_fraction * lin_magnitude).clamp_min(1e-6)
+    lin_shortfall = (1.0 - projected_speed / lin_target).clamp(0.0, 1.0)
+    lin_shortfall *= lin_magnitude > lin_cmd_threshold
+
+    yaw_magnitude = command[:, 2].abs()
+    signed_yaw_speed = asset.data.root_ang_vel_w[:, 2] * command[:, 2].sign()
+    yaw_target = (speed_fraction * yaw_magnitude).clamp_min(1e-6)
+    yaw_shortfall = (1.0 - signed_yaw_speed / yaw_target).clamp(0.0, 1.0)
+    yaw_shortfall *= yaw_magnitude > ang_cmd_threshold
+    return torch.maximum(lin_shortfall, yaw_shortfall)
+
+
 def idle_when_commanded(
     env: BaseEnv | TienKungEnv | G1Env,
     cmd_threshold: float = 0.2,

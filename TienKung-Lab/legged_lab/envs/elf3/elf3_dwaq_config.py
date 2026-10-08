@@ -84,6 +84,19 @@ class Elf3DwaqDelaySplitRootEnvCfg(Elf3DwaqDelayEnvCfg):
         for name in ("gait_phase_contact", "feet_swing_height"):
             getattr(self.reward, name).params["command_threshold"] = 1e-6
 
+        # Give small translation/yaw commands more tracking incentive while
+        # preserving the command distribution, posture terms and controller.
+        for name in ("track_lin_vel_xy_exp", "track_ang_vel_z_exp"):
+            term = getattr(self.reward, name)
+            term.weight = 3.0
+            term.params["std"] = 0.35
+        self.reward.idle_penalty.func = mdp.command_velocity_shortfall
+        self.reward.idle_penalty.params = {
+            "lin_cmd_threshold": 0.05,
+            "ang_cmd_threshold": 0.1,
+            "speed_fraction": 0.8,
+        }
+
 
 @configclass
 class Elf3DwaqAgentCfg(G1DwaqAgentCfg):
