@@ -5,6 +5,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
+from legged_lab import mdp
 from legged_lab.assets.elf3 import CONTRACT, ELF3_CFG, FOOT_BODIES
 from legged_lab.envs.g1.g1_dwaq_config import G1DwaqAgentCfg, G1DwaqEnvCfg
 
@@ -64,6 +65,24 @@ class Elf3DwaqDelayEnvCfg(Elf3DwaqEnvCfg):
         self.domain_rand.action_delay.enable = True
         # One delay step is one 50 Hz policy period (20 ms).
         self.domain_rand.action_delay.params = {"min_delay": 0, "max_delay": 2}
+
+
+@configclass
+class Elf3DwaqDelaySplitRootEnvCfg(Elf3DwaqDelayEnvCfg):
+    """Keep separate pelvis and torso orientation costs on ELF3's body tree."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        # ELF3's floating root is the torso, unlike G1's pelvis. Resolve the
+        # pelvis explicitly for the -1 term; the -2 torso term stays unchanged.
+        self.reward.flat_orientation_l2.func = mdp.body_orientation_l2
+        self.reward.flat_orientation_l2.params = {
+            "asset_cfg": SceneEntityCfg("robot", body_names=[CONTRACT["policy_root"]]),
+        }
+        # Stop asking for alternating contacts / swing clearance at zero command.
+        # Keep phase observations and all moving-command rewards unchanged.
+        for name in ("gait_phase_contact", "feet_swing_height"):
+            getattr(self.reward, name).params["command_threshold"] = 1e-6
 
 
 @configclass

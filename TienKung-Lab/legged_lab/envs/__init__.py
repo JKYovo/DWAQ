@@ -75,6 +75,7 @@ task_registry.register("g1_dwaq", G1DwaqEnv, G1DwaqEnvCfg(), G1DwaqAgentCfg())
 from legged_lab.envs.elf3.elf3_dwaq_env import Elf3DwaqEnv
 from legged_lab.envs.elf3.runner import Elf3DwaqOnPolicyRunner, Elf3DwaqUpperBodySymmetryRunner
 from legged_lab.envs.elf3.elf3_dwaq_config import (
+    Elf3DwaqDelaySplitRootEnvCfg,
     Elf3DwaqAgentCfg, Elf3DwaqDelayEnvCfg, Elf3DwaqEnvCfg, Elf3DwaqFlatAgentCfg, Elf3DwaqFlatEnvCfg,
     Elf3DwaqUpperBodySymmetryAgentCfg, Elf3DwaqUpperBodySymmetryPoseAgentCfg,
 )
@@ -97,5 +98,11 @@ task_registry.register(
     "elf3_dwaq_upper_symmetry_pose_delay",
     Elf3DwaqEnv,
     Elf3DwaqDelayEnvCfg(),
+    Elf3DwaqUpperBodySymmetryPoseAgentCfg(),
+)
+task_registry.register(
+    "elf3_dwaq_upper_symmetry_pose_delay_split_root",
+    Elf3DwaqEnv,
+    Elf3DwaqDelaySplitRootEnvCfg(),
     Elf3DwaqUpperBodySymmetryPoseAgentCfg(),
 )

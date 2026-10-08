@@ -321,7 +321,8 @@ def alive(env: BaseEnv) -> torch.Tensor:
 
 
 def gait_phase_contact(
-    env: BaseEnv, sensor_cfg: SceneEntityCfg, stance_threshold: float = 0.55
+    env: BaseEnv, sensor_cfg: SceneEntityCfg, stance_threshold: float = 0.55,
+    command_threshold: float | None = None,
 ) -> torch.Tensor:
     """Reward for foot contact matching the expected gait phase.
     
@@ -358,7 +359,11 @@ def gait_phase_contact(
     # XOR gives True when they don't match, so we negate it
     phase_match = ~(contact ^ is_stance)  # (num_envs, num_feet)
     
-    return torch.sum(phase_match.float(), dim=-1)  # Sum over feet
+    reward = torch.sum(phase_match.float(), dim=-1)
+    if command_threshold is not None:
+        # Gate by the requested motion, including turning in place, not actual speed.
+        reward *= torch.any(torch.abs(env.command_generator.command[:, :3]) > command_threshold, dim=-1)
+    return reward
 
 
 
@@ -366,7 +371,8 @@ def feet_swing_height(
     env: BaseEnv, 
     sensor_cfg: SceneEntityCfg,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    target_height: float = 0.08
+    target_height: float = 0.08,
+    command_threshold: float | None = None,
 ) -> torch.Tensor:
     """Simple version: Penalize swing foot height deviation from fixed target.
     
@@ -394,7 +400,10 @@ def feet_swing_height(
     # Penalize height error only during swing phase (not in contact)
     pos_error = torch.square(feet_pos_z - target_height) * (~contact).float()
     
-    return torch.sum(pos_error, dim=-1)
+    reward = torch.sum(pos_error, dim=-1)
+    if command_threshold is not None:
+        reward *= torch.any(torch.abs(env.command_generator.command[:, :3]) > command_threshold, dim=-1)
+    return reward
 
 
 def base_height(
