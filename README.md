@@ -1,139 +1,279 @@
-# ELF3 DWAQ：0918 训练基线与新资产
+# ELF3 DWAQ：盲走与楼梯地形强化学习
 
-本版训练核心恢复到 `2362a3ade4f12846ee26c2da0d33a6634cad5349`，采用该提交完整注册的
-`elf3_dwaq_upper_symmetry_pose` 环境、Agent 和 `Elf3DwaqUpperBodySymmetryRunner`，
-不是给基础任务临时添加两个损失系数。有效训练配置与本机正在运行的 0918 实验逐项核对。
+[![Isaac Sim](https://img.shields.io/badge/Isaac%20Sim-4.5.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/)
+[![Isaac Lab](https://img.shields.io/badge/Isaac%20Lab-2.1.1-silver.svg)](https://isaac-sim.github.io/IsaacLab/)
+[![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-yellow.svg)](LICENSE)
 
-本版不启用后续的动作延迟、动态速度奖励、特殊指令采样、制动、躯干高度或默认腿姿态强化实验。
-训练算法、奖励、地形和域随机化均恢复到上述提交；新增资产及启动／检查工具另行列明。
+本项目将 DWAQ（DreamWaQ 风格的历史观测编码器 + PPO）适配到 **ELF3 29 自由度人形机器人**，用于无视觉地形适应、盲走和楼梯训练。训练框架基于 Isaac Lab、TienKung-Lab、Legged Lab 与 RSL-RL。
 
-## 配置
+公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前版本采用 `2362a3a` 的 0918 训练配置并更新 ELF3 资产参数，不启用动作延迟；历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
 
-| 项目 | 发布入口的有效值 |
-| --- | --- |
-| 任务 | `elf3_dwaq_upper_symmetry_pose` |
-| Runner | `Elf3DwaqUpperBodySymmetryRunner` |
-| 初始化 | 随机权重、全新优化器，不加载旧 checkpoint |
-| 环境数／seed | 4096／42 |
-| rollout／mini-batches／PPO epochs | 24／4／5 |
-| 学习率 | 初始 `1e-4`，adaptive 范围 `1e-5～3e-4` |
-| 上肢镜像／姿态辅助系数 | `0.1／0.02` |
-| 速度跟踪奖励 | 线／角速度权重均 `2.0`，std 均 `0.5` |
-| 迭代与保存 | 100001 次更新，编号 0～100000，每 500 次保存 |
-| 策略接口 | 5×100 历史 → 29 动作，0.8 秒相位时钟 |
-| 控制 | 物理 dt=0.005 秒，decimation=4，策略 50 Hz |
+## 功能
 
-注册 Agent 原始默认值仍是 20000 次更新、每 100 次保存，以保持 0918 源码不变。
-**本页启动器**明确覆盖训练预算、保存间隔、环境数、seed、TensorBoard 和 run name；
-运行时核验最终 `params/agent.yaml` 及实际 PPO 辅助损失配置。
+- ELF3 原生 29 关节顺序、默认姿态、PD、力矩限制和动作缩放
+- 100 维本体观测，5 帧历史输入，无视觉/高度扫描 Actor 输入
+- DWAQ VAE 速度估计与隐变量编码
+- 上身左右镜像损失和软默认姿态损失
+- 17 级渐进地形，最高 30 cm 台阶
+- VAE 数值修复、有限值检查、梯度检查和损坏 checkpoint 拒绝保存
+- TensorBoard 与 SwanLab 训练记录
+- 确定性 TorchScript/ONNX 导出及 MuJoCo Sim2Sim 验证
 
-## 资产：参数对齐不等于整套物理模型相同
+> DWAQ 本身不包含 AMP。本项目的 ELF3 DWAQ 训练也不加载 AMP 动作数据或 AMP 权重。
 
-入口为 [elf3.py](TienKung-Lab/legged_lab/assets/elf3/elf3.py)，按 MelodyAI 的具名执行器分组格式维护。
-[contract.json](TienKung-Lab/legged_lab/configs/elf3/contract.json) 是观测、动作及机器人参数契约；
-构建 DWAQ 环境时逐关节检查两者一致，参数调整必须同步契约。资产包本身不依赖这些训练元数据。
+## 稳定任务
 
-- 保留当前约 **43.22 kg** 的 USD、URDF、MJCF、网格、碰撞与刚体惯量；没有换成 MelodyAI 训练仓库约 37.87 kg 的 USD。
-- 使用 `ImplicitActuatorCfg`，求解器位置／速度迭代 8／4。
-- 全部 29 个关节显式 `armature=0.01`；全部速度上限 **20 rad/s**。
-- 腰三个关节及双侧髋 pitch／roll **100 Nm**；髋 yaw **50 Nm**；膝 **150 Nm**；
-  踝 pitch／roll **50／20 Nm**；肩 pitch／roll、肘 **50 Nm**；肩 yaw 和腕 **25 Nm**。
-- 默认关节姿态、Kp/Kd 与动作尺度不重新计算。目标仍为 `默认关节位置 + action × action_scale`。
-- MelodyAI 原始 Isaac 配置未显式设置 armature，本版显式 0.01 是额外选择，不声称与其完全相同。
-- 原始配置快照位于 `scripts/references/melody_elf3.py`，仅用于来源核验，不是另一个待使用的 USD。
-
-资产目录按配置与物理文件组织：
+推荐任务：
 
 ```text
-assets/elf3/
-├── __init__.py
-├── elf3.py
-├── usd/
-├── urdf/
-├── meshes/
-└── mjcf/
+elf3_dwaq_upper_symmetry_pose
 ```
 
-训练／部署契约在 `legged_lab/configs/elf3/contract.json`，加载和校验逻辑在 `legged_lab/elf3_contract.py`；
-来源记录在 `docs/elf3_asset_provenance.json`，资产独立检查入口为 `scripts/check_elf3_asset.py`。
-MJCF 位于 `mjcf/elf3.xml`，URDF 与 MJCF 均相对引用 `../meshes/`，复制整个资产目录即可保留几何依赖。
-历史 checkpoint 契约中的物理文件路径仍作来源标识；检查器只允许这些已知路径迁移，仍拒绝几何或动力学数值变化。
-历史 Amp 导入器只允许输出到新归档目录，不再覆盖当前资产和训练配置。
+上肢镜像／姿态辅助系数为 `0.1／0.02`；学习率初始 `1e-4`，adaptive 范围 `1e-5～3e-4`。
+资产采用隐式 PD、全部关节 `armature=0.01` 和 `20 rad/s` 速度限幅；默认姿态及动作尺度不变，详细关节参数见 [elf3.py](TienKung-Lab/legged_lab/assets/elf3/elf3.py)。
 
-## 安装
+## 环境
 
-已验证依赖栈：Python 3.10、PyTorch 2.5.1+cu124、Isaac Sim 4.5.0、Isaac Lab 2.1.1。
-保持本机原有安装脚本和 `elf3.sh`；新机器应创建自己的环境，不复制其他机器的 `.venv`。
+已验证环境：
+
+- Ubuntu 22.04
+- NVIDIA RTX 4090
+- Python 3.10.20
+- PyTorch 2.5.1 + CUDA 12.4
+- Isaac Sim 4.5.0
+- Isaac Lab 2.1.1
+- MuJoCo 3.3.2
+
+### 安装
+
+准备 Conda 和匹配的 NVIDIA 驱动后执行；安装脚本会创建 Python 3.10 环境并安装 Isaac Sim 4.5、Isaac Lab 2.1.1 及项目依赖：
 
 ```bash
 git clone https://github.com/JKYovo/DWAQ.git
 cd DWAQ
+
 bash scripts/setup_elf3_env.sh
 ```
 
-可用 `ELF3_CONDA` 和 `ELF3_ISAACLAB_DIR` 指定安装位置；standalone Isaac Sim 可设置
-`ELF3_ISAAC_SIM_DIR`。训练的 Python、PYTHONPATH 和日志均相对当前 checkout，
-不依赖 `/home/cheng/DWAQ_0918` 或其历史日志。
+安装脚本默认使用以下项目内路径：
 
-## 检查与训练
-
-先进行只读源码／资产指纹检查：
-
-```bash
-.venv/bin/python scripts/release_0918_checks.py
-./elf3.sh scripts/train_0918_melody.py --headless --verify-config-only
+```text
+Isaac Sim: <项目目录>/.venv（pip 安装）
+Isaac Lab: <项目目录>/IsaacLab
+Python:    <项目目录>/.venv/bin/python
 ```
 
-独立技术短测（不上传 SwanLab，权重不用于正式训练）：
+可以通过环境变量覆盖：
 
 ```bash
-./elf3.sh scripts/train_0918_melody.py --headless \
-  --num-envs 64 --iterations 20 --run-name release_smoke64_20
-
-./elf3.sh scripts/check_melody_smoke.py \
-  --run logs/elf3_dwaq_upper_symmetry_pose/<短测目录>
+ELF3_CONDA=/path/to/conda \
+ELF3_ISAACLAB_DIR=/path/to/IsaacLab \
+bash scripts/setup_elf3_env.sh
 ```
 
-确认 SwanLab 已登录后，正式从零训练：
+训练、导出与仿真均建议使用根目录的 `elf3.sh`，确保加载当前环境的 CUDA 动态库。如需使用已有 standalone Isaac Sim：
 
 ```bash
-bash scripts/train_0918_melody.sh
+ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 ```
 
-该固定入口创建独立 run，不恢复已有模型，也不因技术崩溃自动重启。
-仅检查／整理此仓库不会启动这个正式训练命令。
+## 从头训练 10 万轮
 
-日志在 `logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/`。
-TensorBoard 是主日志；SwanLab 在独立进程补传，保留超时、心跳和已确认上传游标。
-`pose_scratch_swanlab.py` 的文件名是历史命名，功能仅为通用日志传输，不加入旧实验奖励。
+```bash
+./elf3.sh scripts/train_0918_melody.py \
+  --headless \
+  --num-envs=4096 \
+  --iterations=100001 \
+  --run-name=elf3_dwaq_0918_100k \
+  --swanlab-project=DWAQ
+```
 
-每次运行保存最终环境／Agent YAML、覆盖清单、源码指纹、从零初始化记录及运行时 PhysX 参数检查结果。
-[训练清单](docs/elf3_0918_training_manifest.json) 固定训练核心和发布配方的 SHA256，
-不要求 Git HEAD 永远等于旧提交，因此新提交、推送和重新 clone 后仍能核验。
-有意修改配方时需重新验证并更新该清单；不要绕过检查后宣称仍与本配方相同。
+训练日志保存在：
 
-## 导出与部署
+```text
+logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
+```
+
+上述入口固定 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，从零训练并每 500 轮保存。TensorBoard 为主日志，SwanLab 由独立进程补传；使用前需完成 SwanLab 登录。
+`--iterations=100001` 对应编号 0～100000；该入口不加载旧权重。
+
+### 续训
+
+```bash
+./elf3.sh TienKung-Lab/legged_lab/scripts/train.py \
+  --task=elf3_dwaq_upper_symmetry_pose \
+  --headless \
+  --num_envs=4096 \
+  --seed=42 \
+  --resume=True \
+  --load_run=<运行目录名> \
+  --checkpoint=model_100000.pt \
+  --max_iterations=10001 \
+  --run_name=resume_from_100000 \
+  --logger=tensorboard \
+  --swanlab_project=DWAQ
+```
+
+续训恢复策略、优化器和迭代编号；仅支持资产契约匹配的 checkpoint，不能直接使用旧资产版本权重。通用 `train.py` 的保存间隔沿用任务默认值（100 轮），`max_iterations` 表示本次追加的更新次数。
+并行环境的 terrain level 不保存在 checkpoint 中，新进程会从配置的初始等级重新建立课程。
+
+## 地形课程
+
+训练地形共 17 级（Level 0–16）：
+
+- Level 0–9 保留原有课程，楼梯逐步增加到约 23 cm
+- Level 10–16 继续增加楼梯高度
+- Level 16 楼梯最高 30 cm
+- 训练混合：55% 楼梯、10% 随机方格、15% 随机粗糙、10% 波浪、10% 斜坡
+- 宽沟地形已移除，因为纯本体感觉策略无法在接触前感知宽沟
+
+机器人离地形出生点超过 4 m 时升级；未达到与命令速度相关的距离阈值时降级。通过 Level 16 后，Isaac Lab 会将该环境随机送回其他等级，因此 TensorBoard 中的平均 level 不会长期停在 16。
+
+## Play
+
+### 训练地形最高等级（包含最高 30 cm 台阶）
+
+```bash
+./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
+  --task=elf3_dwaq_upper_symmetry_pose \
+  --num_envs=20 \
+  --load_run=<运行目录名> \
+  --checkpoint=model_100000.pt \
+  --terrain=rough \
+  --difficulty=1.0 \
+  --terrain_color=concrete
+```
+
+`--terrain=rough --difficulty=1.0` 对应训练课程的 Level 16。`--terrain=stairs` 使用独立的纯台阶测试配置，台阶范围为 20–25 cm，并不对应 30 cm 训练等级。
+
+其他测试地形：
+
+```bash
+# 平地
+./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
+  --task=elf3_dwaq_upper_symmetry_pose --terrain=flat \
+  --load_run=<运行目录名> --checkpoint=model_100000.pt
+
+# 纯台阶
+./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
+  --task=elf3_dwaq_upper_symmetry_pose --terrain=stairs --difficulty=1.0 \
+  --load_run=<运行目录名> --checkpoint=model_100000.pt
+```
+
+Play 会关闭观测噪声与周期推力，并固定前进命令为 `1.0 m/s`。
+
+## 策略接口
+
+Actor 单帧观测为 100 维：
+
+| 范围 | 内容 | 维度 |
+| --- | --- | ---: |
+| `0:3` | 躯干角速度（body frame） | 3 |
+| `3:6` | 重力投影（body frame） | 3 |
+| `6:9` | `vx, vy, yaw_rate` 命令 | 3 |
+| `9:38` | 关节位置减默认姿态 | 29 |
+| `38:67` | 关节速度 | 29 |
+| `67:96` | 上一步动作 | 29 |
+| `96:100` | 左右腿相位的 sin/cos | 4 |
+
+DWAQ 历史输入为 5 帧，共 500 维，顺序为旧帧到新帧。Actor 输出 29 维归一化关节动作。
+
+## 导出
+
+使用 ELF3 专用导出器。输出目录必须是尚不存在的新目录：
 
 ```bash
 ./elf3.sh scripts/export_elf3_dwaq.py \
   --checkpoint logs/elf3_dwaq_upper_symmetry_pose/<运行目录>/model_100000.pt \
-  --output artifacts/elf3_model_100000_export
+  --output artifacts/elf3_dwaq_model_100000
 ```
 
-输出 `policy.onnx`、`policy.pt`、`policy.json`；输出目录必须新建。
-即使是 CPU 导出／短测校验，也建议使用 `elf3.sh`，以避免系统 CUDA 动态库覆盖当前环境的依赖。
-采用确定性编码均值路径，输入 `float32[batch,500]`、输出 `[batch,29]`。
-模型与 JSON 成对部署；JSON 本身不自动修改部署端力矩限制、armature、PD 或电机映射。
-相同输入维度不代表旧资产契约的 checkpoint 可直接续训，导出器和 Runner 会拒绝不匹配契约。
+输出文件：
 
-MuJoCo 回放脚本及已有部署修改保留；回放不等于真机验证。
-这次整理不宣称解决真机抖动，也不上传权重、日志、认证信息或本机归档。
-仓库继承的 G1 示例权重不属于本次 ELF3 发布模型。
+```text
+policy.pt    TorchScript
+policy.onnx  ONNX
+policy.json  机器人契约、关节顺序、控制参数和 checkpoint 哈希
+```
 
-## 来源与历史边界
+导出使用编码器的 mean velocity 和 mean latent，不进行随机采样。ONNX 部署接口固定为：
 
-- 训练基线：`2362a3ade4f12846ee26c2da0d33a6634cad5349`。
-- MelodyAI 配置来源及保留物理文件哈希：见 `legged_lab/configs/elf3/contract.json`、`docs/elf3_asset_provenance.json`。
-- 历史延迟／split-root 文档仅为存档，不是本版训练说明。
-- 旧指令响应、quality-v3、pose-scratch 和 blind-x 实验源码已从活动源码树移入本机备份；
-  既有训练权重和日志保留。备份在 `artifacts/`，不提交到 Git。
+```text
+input:  history [batch, 500]
+output: actions [batch, 29]
+```
+
+导出器会检查 ELF3 资产契约、全部权重、有限输出、TorchScript 一致性和 ONNX Runtime 数值误差。checkpoint 始终只读。
+
+## MuJoCo Sim2Sim
+
+```bash
+# 平地、有界运行
+./elf3.sh scripts/sim2sim_elf3_dwaq.py \
+  --policy artifacts/elf3_dwaq_model_100000/policy.pt \
+  --headless --steps 3000 --command 0.3 0 0
+
+# 楼梯
+./elf3.sh scripts/sim2sim_elf3_dwaq.py \
+  --policy artifacts/elf3_dwaq_model_100000/policy.pt \
+  --scene stairs --step-height 0.10 --command 0.3 0 0
+```
+
+该脚本用于 Sim2Sim 验证；本仓库没有集成 ELF3 实物通信 SDK。实物控制器必须严格遵循 `policy.json` 中的关节顺序、默认姿态、动作缩放、控制周期和历史顺序。
+
+## 项目结构
+
+```text
+.
+├── elf3.sh                              # Isaac Sim/Isaac Lab 启动入口
+├── requirements-elf3.txt                # ELF3 环境依赖
+├── scripts/
+│   ├── setup_elf3_env.sh                # 环境安装
+│   ├── train_0918_melody.py             # 当前从零训练入口
+│   ├── export_elf3_dwaq.py              # 确定性导出
+│   ├── sim2sim_elf3_dwaq.py             # MuJoCo 回放
+│   └── check_elf3.py                    # 资产/接口/训练检查
+├── TienKung-Lab/legged_lab/
+│   ├── assets/elf3/                     # elf3.py、usd/、urdf/、mjcf/、meshes/
+│   ├── configs/elf3/                    # 观测/动作及机器人参数契约
+│   ├── envs/elf3/                       # ELF3 环境、配置和 runner
+│   ├── terrains/                        # 17 级课程与 30 cm 台阶映射
+│   └── scripts/                         # train.py / play.py
+└── docs/ELF3_VALIDATION.json            # 机器可读验证结果
+```
+
+## 验证
+
+```bash
+# 平地接口与 PPO 更新检查
+./elf3.sh scripts/check_elf3.py \
+  --headless --terrain flat --num_envs 16 \
+  --output artifacts/check_flat.json
+
+# 粗糙地形检查
+./elf3.sh scripts/check_elf3.py \
+  --headless --terrain rough --num_envs 32 \
+  --output artifacts/check_rough.json
+```
+
+检查覆盖 ELF3 资产质量/惯量、关节顺序、默认姿态、动作缩放、脚接触索引、观测历史、PPO 更新、checkpoint 契约和有限值。
+
+## 上游与致谢
+
+本项目基于以下开源项目：
+
+- [G1DWAQ_Lab](https://github.com/liuyufei-nubot/G1DWAQ_Lab)
+- [TienKung-Lab](https://github.com/Open-X-Humanoid/TienKung-Lab)
+- [MelodyAI/TienKung-Lab](https://github.com/MelodyAI/TienKung-Lab)（ELF3 执行器配置参考）
+- [Legged Lab](https://github.com/Hellod035/LeggedLab)
+- [DreamWaQ / Manaro-Alpha](https://github.com/Manaro-Alpha/DreamWaQ)
+- [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
+- [RSL-RL](https://github.com/leggedrobotics/rsl_rl)
+
+ELF3 物理模型和默认姿态来自 Amp_mjlab 的 ELF3 适配，执行器配置参考 MelodyAI；保留当前约 43.22 kg 的 USD，并非替换为 MelodyAI 的整套物理模型。
+来源与哈希记录在 `docs/elf3_asset_provenance.json`，参数契约在 `TienKung-Lab/legged_lab/configs/elf3/contract.json`。
+
+## 许可证
+
+项目采用 [BSD-3-Clause License](LICENSE)。各上游组件和资产仍遵循其各自许可证。
