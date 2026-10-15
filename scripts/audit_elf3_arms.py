@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import mujoco
 import hashlib
-from legged_lab.assets.elf3 import ASSET_DIR, CONTRACT, JOINT_NAMES
+from legged_lab.elf3_contract import ASSET_DIR, CONTRACT, JOINT_NAMES
 from legged_lab.envs.elf3.elf3_dwaq_config import Elf3DwaqFlatEnvCfg
 from legged_lab.envs.elf3.elf3_dwaq_env import Elf3DwaqEnv
 
@@ -98,7 +98,7 @@ try:
     report['single_joint_target_offsets'] = action_checks
 
     # Compare complete body transforms at multiple arm angles, not just link origins at home.
-    model = mujoco.MjModel.from_xml_path(str(ASSET_DIR / 'xmls/elf3.xml'))
+    model = mujoco.MjModel.from_xml_path(str(ASSET_DIR / 'mjcf/elf3.xml'))
     data = mujoco.MjData(model)
     max_position_error = max_rotation_error = 0.
     for amount in (0., 0.25, -0.15):

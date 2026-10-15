@@ -1,3 +1,5 @@
+> 历史实验存档，非当前训练配置。当前发布版已恢复 0918 配方，见 [README](../README.md)。
+
 # ELF3 DWAQ GitHub 改进版存档（2026-09-22）
 
 本存档基于 GitHub `JKYovo/DWAQ` 的 `main` 提交 `7b584a7`。本地 Git 标签为

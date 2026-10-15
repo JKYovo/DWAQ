@@ -11,6 +11,7 @@ import torch
 
 PROJECT = Path(__file__).resolve().parents[1]
 ASSET_DIR = PROJECT / "TienKung-Lab/legged_lab/assets/elf3"
+CONTRACT_PATH = ASSET_DIR.parents[1] / "configs/elf3/contract.json"
 
 
 def load_policy(checkpoint):
@@ -19,7 +20,7 @@ def load_policy(checkpoint):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     saved = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    contract = json.loads((ASSET_DIR / "contract.json").read_text())
+    contract = json.loads(CONTRACT_PATH.read_text())
     metadata = (saved.get("infos") or {}).get("elf3_contract", {})
     digest = hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest()
     if metadata.get("asset_contract_sha256") != digest or metadata.get("joint_names") != contract["joint_names"]:

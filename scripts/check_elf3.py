@@ -22,7 +22,7 @@ from pxr import Usd, UsdPhysics
 from scipy.spatial.transform import Rotation
 from isaaclab.managers import RewardTermCfg, SceneEntityCfg
 from isaaclab.utils.math import quat_apply_inverse
-from legged_lab.assets.elf3 import ASSET_DIR, CONTRACT, JOINT_NAMES
+from legged_lab.elf3_contract import ASSET_DIR, CONTRACT, JOINT_NAMES
 from legged_lab.envs.elf3.elf3_dwaq_config import Elf3DwaqEnvCfg, Elf3DwaqFlatEnvCfg, Elf3DwaqAgentCfg
 from legged_lab.envs.elf3.elf3_dwaq_env import Elf3DwaqEnv
 from legged_lab.envs.elf3.runner import Elf3DwaqOnPolicyRunner
@@ -61,10 +61,11 @@ def main():
              "TienKung-Lab/legged_lab/mdp/rewards.py"]
     for path in paths:
         data = (project / path).read_bytes()
-        assert data == subprocess.check_output(["git", "show", f"origin/main:{path}"], cwd=project)
+        manifest = json.loads((project / "docs/elf3_0918_training_manifest.json").read_text())
+        assert hashlib.sha256(data).hexdigest() == manifest["baseline_training_files"][path]
         source_hashes[path] = hashlib.sha256(data).hexdigest()
 
-    model = mujoco.MjModel.from_xml_path(str(ASSET_DIR / "xmls/elf3.xml"))
+    model = mujoco.MjModel.from_xml_path(str(ASSET_DIR / "mjcf/elf3.xml"))
     stage = Usd.Stage.Open(str(ASSET_DIR / "usd/elf3.usd"))
     usd_masses = {}
     for prim in stage.Traverse():
@@ -127,9 +128,7 @@ def main():
         np.testing.assert_allclose(actual, expected, atol=1e-5)
     for key, tensor in [("stiffness", robot.data.joint_stiffness), ("damping", robot.data.joint_damping),
                         ("armature", robot.data.joint_armature)]:
-        # Explicit PD gains live in the actuator; simulator gains are zero.
-        if key in ("stiffness", "damping"):
-            tensor = getattr(robot.actuators["native_pd"], key)
+        # The Melody-style profile uses implicit PD; gains live in PhysX.
         expected = torch.tensor([CONTRACT[key][n] for n in robot.joint_names], device=env.device)
         torch.testing.assert_close(tensor[0], expected)
     assert (env.num_obs, env.num_privileged_obs, env.num_obs_hist, env.num_actions) == (100, 311, 5, 29)

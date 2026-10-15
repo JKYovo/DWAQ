@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <mujoco model="elf3">
-  <compiler angle="radian" meshdir="robot_meshes" />
+  <compiler angle="radian" meshdir="../meshes" />
   <asset>
     <mesh name="torso_link" content_type="model/stl" file="torso_link.STL" />
     <mesh name="l_hip_y_link" content_type="model/stl" file="l_hip_y_link.STL" />

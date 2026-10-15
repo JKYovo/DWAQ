@@ -1,4 +1,4 @@
-"""Snapshot the Amp_mjlab ELF3 asset and convert its explicit MJCF to URDF.
+"""Create an archival Amp_mjlab snapshot, not the active Melody-style asset.
 
 Run with a Python environment containing numpy/scipy. No learned weights are read.
 The generated URDF preserves the MJCF's already-fused head inertias and selected
@@ -62,7 +62,7 @@ def convert(xml_path, urdf_path, efforts):
             element = ET.SubElement(link, "visual" if visual else "collision", name=geom.attrib["name"])
             origin(element, geom)
             geometry = ET.SubElement(element, "geometry")
-            ET.SubElement(geometry, "mesh", filename="../xmls/robot_meshes/" + mesh_files[geom.attrib["mesh"]])
+            ET.SubElement(geometry, "mesh", filename="../meshes/" + mesh_files[geom.attrib["mesh"]])
             if visual:
                 material = ET.SubElement(element, "material", name="elf3_gray")
                 ET.SubElement(material, "color", rgba=geom.get("rgba", "0.75 0.75 0.75 1"))
@@ -89,12 +89,24 @@ def convert(xml_path, urdf_path, efforts):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--amp", type=Path, default=Path(__file__).resolve().parents[2] / "Amp_mjlab")
+    parser.add_argument("--output-dir", type=Path, required=True,
+                        help="New archival directory; never overwrite the active ELF3 asset/config")
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
-    target = project / "TienKung-Lab/legged_lab/assets/elf3"
+    target = args.output_dir.resolve()
+    for active in (project / "TienKung-Lab/legged_lab/assets/elf3",
+                   project / "TienKung-Lab/legged_lab/configs/elf3"):
+        if target == active or target.is_relative_to(active):
+            raise ValueError("Legacy snapshot cannot be written into the active asset or metadata directory")
+    if target.exists():
+        raise FileExistsError("Choose a new archival output directory")
     source = args.amp / "src/assets/robots/elf3"
-    target.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source / "xmls", target / "xmls", dirs_exist_ok=True)
+    target.mkdir(parents=True, exist_ok=False)
+    shutil.copytree(source / "xmls/robot_meshes", target / "meshes")
+    (target / "mjcf").mkdir()
+    xml = ET.parse(source / "xmls/elf3.xml")
+    xml.find("compiler").set("meshdir", "../meshes")
+    xml.write(target / "mjcf/elf3.xml", encoding="utf-8", xml_declaration=True)
     # Extract only the literal robot contract and pure gain function; no mjlab imports.
     tree = ast.parse((source / "elf3_constants.py").read_text())
     selected = [node for node in tree.body if
@@ -132,7 +144,7 @@ def main():
     }
     (target / "contract.json").write_text(json.dumps(contract, indent=2) + "\n")
     (target / "urdf").mkdir(exist_ok=True)
-    convert(target / "xmls/elf3.xml", target / "urdf/elf3.urdf", contract["effort_limit"])
+    convert(target / "mjcf/elf3.xml", target / "urdf/elf3.urdf", contract["effort_limit"])
     provenance = {
         "amp_repository": str(args.amp.resolve()),
         "amp_commit": subprocess.check_output(["git", "-C", str(args.amp), "rev-parse", "HEAD"], text=True).strip(),

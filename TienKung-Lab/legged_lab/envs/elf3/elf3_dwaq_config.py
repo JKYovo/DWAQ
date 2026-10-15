@@ -5,8 +5,8 @@ import isaaclab.sim as sim_utils
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
-from legged_lab import mdp
-from legged_lab.assets.elf3 import CONTRACT, ELF3_CFG, FOOT_BODIES
+from legged_lab.assets.elf3 import ELF3_CFG
+from legged_lab.elf3_contract import CONTRACT, FOOT_BODIES, validate_contract
 from legged_lab.envs.g1.g1_dwaq_config import G1DwaqAgentCfg, G1DwaqEnvCfg
 
 
@@ -15,6 +15,7 @@ class Elf3DwaqEnvCfg(G1DwaqEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.robot = ELF3_CFG.copy()
+        validate_contract(self.scene.robot)
         self.scene.terrain_generator = deepcopy(self.scene.terrain_generator)
         self.scene.height_scanner.prim_body_name = CONTRACT["physical_root"]
         self.robot.terminate_contacts_body_names = [CONTRACT["physical_root"]]
@@ -57,48 +58,6 @@ class Elf3DwaqFlatEnvCfg(Elf3DwaqEnvCfg):
 
 
 @configclass
-class Elf3DwaqDelayEnvCfg(Elf3DwaqEnvCfg):
-    """ELF3 DWAQ fine-tuning with 0/20/40 ms coherent action delays."""
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.domain_rand.action_delay.enable = True
-        # One delay step is one 50 Hz policy period (20 ms).
-        self.domain_rand.action_delay.params = {"min_delay": 0, "max_delay": 2}
-
-
-@configclass
-class Elf3DwaqDelaySplitRootEnvCfg(Elf3DwaqDelayEnvCfg):
-    """Keep separate pelvis and torso orientation costs on ELF3's body tree."""
-
-    def __post_init__(self):
-        super().__post_init__()
-        # ELF3's floating root is the torso, unlike G1's pelvis. Resolve the
-        # pelvis explicitly for the -1 term; the -2 torso term stays unchanged.
-        self.reward.flat_orientation_l2.func = mdp.body_orientation_l2
-        self.reward.flat_orientation_l2.params = {
-            "asset_cfg": SceneEntityCfg("robot", body_names=[CONTRACT["policy_root"]]),
-        }
-        # Stop asking for alternating contacts / swing clearance at zero command.
-        # Keep phase observations and all moving-command rewards unchanged.
-        for name in ("gait_phase_contact", "feet_swing_height"):
-            getattr(self.reward, name).params["command_threshold"] = 1e-6
-
-        # Give small translation/yaw commands more tracking incentive while
-        # preserving the command distribution, posture terms and controller.
-        for name in ("track_lin_vel_xy_exp", "track_ang_vel_z_exp"):
-            term = getattr(self.reward, name)
-            term.weight = 3.0
-            term.params["std"] = 0.35
-        self.reward.idle_penalty.func = mdp.command_velocity_shortfall
-        self.reward.idle_penalty.params = {
-            "lin_cmd_threshold": 0.05,
-            "ang_cmd_threshold": 0.1,
-            "speed_fraction": 0.8,
-        }
-
-
-@configclass
 class Elf3DwaqAgentCfg(G1DwaqAgentCfg):
     max_iterations: int = 100001
     experiment_name: str = "elf3_dwaq"
@@ -132,8 +91,8 @@ class Elf3DwaqUpperBodySymmetryPoseAgentCfg(Elf3DwaqUpperBodySymmetryAgentCfg):
 
     def __post_init__(self):
         super().__post_init__()
-        # Keep the corrected VAE loss and numerical guards while using the
-        # original adaptive learning-rate bounds.
-        self.algorithm.learning_rate = 1.0e-3
+        # The old adaptive schedule reached 1e-2 immediately before the
+        # numerical collapse. Resume conservatively after resetting Adam.
+        self.algorithm.learning_rate = 1.0e-4
         self.algorithm.min_learning_rate = 1.0e-5
-        self.algorithm.max_learning_rate = 1.0e-2
+        self.algorithm.max_learning_rate = 3.0e-4

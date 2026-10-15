@@ -9,25 +9,25 @@
     <collision name="torso_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/torso_link.STL" />
+        <mesh filename="../meshes/torso_link.STL" />
       </geometry>
     </collision>
     <collision name="torso_link_collision_1">
       <origin xyz="0 0 0.2995" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/head_z_link.STL" />
+        <mesh filename="../meshes/head_z_link.STL" />
       </geometry>
     </collision>
     <collision name="torso_link_collision_2">
       <origin xyz="0 0 0.2995" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/head_y_link.STL" />
+        <mesh filename="../meshes/head_y_link.STL" />
       </geometry>
     </collision>
     <visual name="torso_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/torso_link.STL" />
+        <mesh filename="../meshes/torso_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -36,7 +36,7 @@
     <visual name="head_z_link_visual_0">
       <origin xyz="0 0 0.2995" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/head_z_link.STL" />
+        <mesh filename="../meshes/head_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -45,7 +45,7 @@
     <visual name="head_y_link_visual_0">
       <origin xyz="0 0 0.2995" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/head_y_link.STL" />
+        <mesh filename="../meshes/head_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -61,7 +61,7 @@
     <visual name="waist_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/waist_y_link.STL" />
+        <mesh filename="../meshes/waist_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -84,7 +84,7 @@
     <visual name="waist_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/waist_x_link.STL" />
+        <mesh filename="../meshes/waist_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -107,7 +107,7 @@
     <visual name="waist_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/waist_z_link.STL" />
+        <mesh filename="../meshes/waist_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -130,13 +130,13 @@
     <collision name="l_hip_y_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_hip_y_link.STL" />
+        <mesh filename="../meshes/l_hip_y_link.STL" />
       </geometry>
     </collision>
     <visual name="l_hip_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_hip_y_link.STL" />
+        <mesh filename="../meshes/l_hip_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -159,7 +159,7 @@
     <visual name="l_hip_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_hip_x_link.STL" />
+        <mesh filename="../meshes/l_hip_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -182,13 +182,13 @@
     <collision name="l_hip_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_hip_z_link.STL" />
+        <mesh filename="../meshes/l_hip_z_link.STL" />
       </geometry>
     </collision>
     <visual name="l_hip_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_hip_z_link.STL" />
+        <mesh filename="../meshes/l_hip_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -211,7 +211,7 @@
     <visual name="l_knee_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_knee_y_link.STL" />
+        <mesh filename="../meshes/l_knee_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -234,7 +234,7 @@
     <visual name="l_ankle_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_ankle_y_link.STL" />
+        <mesh filename="../meshes/l_ankle_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -257,13 +257,13 @@
     <collision name="l_ankle_x_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_ankle_x_link.STL" />
+        <mesh filename="../meshes/l_ankle_x_link.STL" />
       </geometry>
     </collision>
     <visual name="l_ankle_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_ankle_x_link.STL" />
+        <mesh filename="../meshes/l_ankle_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -286,13 +286,13 @@
     <collision name="r_hip_y_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_hip_y_link.STL" />
+        <mesh filename="../meshes/r_hip_y_link.STL" />
       </geometry>
     </collision>
     <visual name="r_hip_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_hip_y_link.STL" />
+        <mesh filename="../meshes/r_hip_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -315,7 +315,7 @@
     <visual name="r_hip_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_hip_x_link.STL" />
+        <mesh filename="../meshes/r_hip_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -338,13 +338,13 @@
     <collision name="r_hip_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_hip_z_link.STL" />
+        <mesh filename="../meshes/r_hip_z_link.STL" />
       </geometry>
     </collision>
     <visual name="r_hip_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_hip_z_link.STL" />
+        <mesh filename="../meshes/r_hip_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -367,7 +367,7 @@
     <visual name="r_knee_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_knee_y_link.STL" />
+        <mesh filename="../meshes/r_knee_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -390,7 +390,7 @@
     <visual name="r_ankle_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_ankle_y_link.STL" />
+        <mesh filename="../meshes/r_ankle_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -413,13 +413,13 @@
     <collision name="r_ankle_x_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_ankle_x_link.STL" />
+        <mesh filename="../meshes/r_ankle_x_link.STL" />
       </geometry>
     </collision>
     <visual name="r_ankle_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_ankle_x_link.STL" />
+        <mesh filename="../meshes/r_ankle_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -442,7 +442,7 @@
     <visual name="l_shoulder_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_shoulder_y_link.STL" />
+        <mesh filename="../meshes/l_shoulder_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -465,7 +465,7 @@
     <visual name="l_shoulder_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_shoulder_x_link.STL" />
+        <mesh filename="../meshes/l_shoulder_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -488,13 +488,13 @@
     <collision name="l_shoulder_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_shoulder_z_link.STL" />
+        <mesh filename="../meshes/l_shoulder_z_link.STL" />
       </geometry>
     </collision>
     <visual name="l_shoulder_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_shoulder_z_link.STL" />
+        <mesh filename="../meshes/l_shoulder_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -517,7 +517,7 @@
     <visual name="l_elbow_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_elbow_y_link.STL" />
+        <mesh filename="../meshes/l_elbow_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -540,13 +540,13 @@
     <collision name="l_wrist_x_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_x_link_part.STL" />
+        <mesh filename="../meshes/l_wrist_x_link_part.STL" />
       </geometry>
     </collision>
     <visual name="l_wrist_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_x_link.STL" />
+        <mesh filename="../meshes/l_wrist_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -569,13 +569,13 @@
     <collision name="l_wrist_y_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_y_link.STL" />
+        <mesh filename="../meshes/l_wrist_y_link.STL" />
       </geometry>
     </collision>
     <visual name="l_wrist_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_y_link.STL" />
+        <mesh filename="../meshes/l_wrist_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -598,13 +598,13 @@
     <collision name="l_wrist_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_z_link.STL" />
+        <mesh filename="../meshes/l_wrist_z_link.STL" />
       </geometry>
     </collision>
     <visual name="l_wrist_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/l_wrist_z_link.STL" />
+        <mesh filename="../meshes/l_wrist_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -627,7 +627,7 @@
     <visual name="r_shoulder_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_shoulder_y_link.STL" />
+        <mesh filename="../meshes/r_shoulder_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -650,7 +650,7 @@
     <visual name="r_shoulder_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_shoulder_x_link.STL" />
+        <mesh filename="../meshes/r_shoulder_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -673,13 +673,13 @@
     <collision name="r_shoulder_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_shoulder_z_link.STL" />
+        <mesh filename="../meshes/r_shoulder_z_link.STL" />
       </geometry>
     </collision>
     <visual name="r_shoulder_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_shoulder_z_link.STL" />
+        <mesh filename="../meshes/r_shoulder_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -702,7 +702,7 @@
     <visual name="r_elbow_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_elbow_y_link.STL" />
+        <mesh filename="../meshes/r_elbow_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -725,13 +725,13 @@
     <collision name="r_wrist_x_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_x_link_part.STL" />
+        <mesh filename="../meshes/r_wrist_x_link_part.STL" />
       </geometry>
     </collision>
     <visual name="r_wrist_x_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_x_link.STL" />
+        <mesh filename="../meshes/r_wrist_x_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -754,13 +754,13 @@
     <collision name="r_wrist_y_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_y_link.STL" />
+        <mesh filename="../meshes/r_wrist_y_link.STL" />
       </geometry>
     </collision>
     <visual name="r_wrist_y_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_y_link.STL" />
+        <mesh filename="../meshes/r_wrist_y_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />
@@ -783,13 +783,13 @@
     <collision name="r_wrist_z_link_collision_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_z_link.STL" />
+        <mesh filename="../meshes/r_wrist_z_link.STL" />
       </geometry>
     </collision>
     <visual name="r_wrist_z_link_visual_0">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="../xmls/robot_meshes/r_wrist_z_link.STL" />
+        <mesh filename="../meshes/r_wrist_z_link.STL" />
       </geometry>
       <material name="elf3_gray">
         <color rgba="0.752941 0.752941 0.752941 1" />

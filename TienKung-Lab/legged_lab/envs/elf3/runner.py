@@ -5,7 +5,7 @@ import json
 import torch
 from rsl_rl.runners import DWAQOnPolicyRunner
 
-from legged_lab.assets.elf3 import CONTRACT
+from legged_lab.elf3_contract import CONTRACT
 from legged_lab.envs.elf3.symmetry import ARM_ACTION_IDS, mirror_actions, mirror_history, mirror_observations
 
 

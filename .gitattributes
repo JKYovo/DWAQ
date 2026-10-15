@@ -1,0 +1,2 @@
+# Preserve the upstream reference verbatim, including its source-hashed whitespace.
+scripts/references/melody_elf3.py -text whitespace=-blank-at-eol

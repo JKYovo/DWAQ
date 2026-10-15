@@ -152,3 +152,9 @@ PROJECT_REVIEW.md
 .venv/
 logs/
 artifacts/
+
+# Local launch logs and training/deployment outputs (never publish weights).
+/logs_*.log
+/swanlog/
+*.pt
+*.onnx

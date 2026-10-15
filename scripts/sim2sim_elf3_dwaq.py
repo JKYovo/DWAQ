@@ -10,6 +10,7 @@ import numpy as np
 import torch
 
 ASSET_DIR = Path(__file__).resolve().parents[1] / "TienKung-Lab/legged_lab/assets/elf3"
+CONTRACT_PATH = ASSET_DIR.parents[1] / "configs/elf3/contract.json"
 
 
 def main():
@@ -24,12 +25,12 @@ def main():
     if args.steps < 1:
         parser.error("--steps must be positive")
     metadata = json.loads(args.policy.with_suffix(".json").read_text())
-    contract = json.loads((ASSET_DIR / "contract.json").read_text())
+    contract = json.loads(CONTRACT_PATH.read_text())
     if metadata.get("contract") != contract:
         raise ValueError("Policy metadata does not match the local ELF3 asset")
     policy = torch.jit.load(str(args.policy), map_location="cpu").eval()
-    xml = ET.parse(ASSET_DIR / "xmls/elf3.xml")
-    xml.find("compiler").set("meshdir", str(ASSET_DIR / "xmls/robot_meshes"))
+    xml = ET.parse(ASSET_DIR / "mjcf/elf3.xml")
+    xml.find("compiler").set("meshdir", str(ASSET_DIR / "meshes"))
     if args.scene == "stairs":
         if not 0 < args.step_height <= 0.3:
             raise ValueError("--step-height must be in (0, 0.3]")

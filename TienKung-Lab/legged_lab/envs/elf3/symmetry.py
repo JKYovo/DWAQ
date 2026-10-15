@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from legged_lab.assets.elf3 import JOINT_NAMES
+from legged_lab.elf3_contract import JOINT_NAMES
 
 
 OBS_DIM = 100
