@@ -1,0 +1,52 @@
+{
+  "version": "elf3_feedback_v1",
+  "status": "experimental; model 48500 has a positive user-reported same-robot deployment test, not a single-factor or full-scenario validation",
+  "base_task": "elf3_dwaq_upper_symmetry_pose",
+  "tasks": {
+    "elf3_dwaq_consistent_v1": "mean actor context and newest critic foot force; ideal velocity observation",
+    "elf3_dwaq_feedback_v1": "same consistency fixes plus 20 Hz Tustin velocity-observation model at 200 Hz physics"
+  },
+  "unchanged": ["43.22 kg USD and collision assets", "armature 0.01", "implicit PD and nominal gains",
+    "effort and 20 rad/s velocity limits", "action scales and home pose", "reward configuration",
+    "terrain and curriculum", "domain randomization", "10-second command resampling",
+    "learning rate 1e-4, adaptive bounds 1e-5 to 3e-4", "upper-body mirror 0.1 and pose 0.02",
+    "24 rollout steps, 4 mini-batches, 5 PPO epochs", "5 x 100 observation / 29 action deployment interface"],
+  "not_changed": ["motor D-term feedback", "action/target filtering", "deployment plugin"],
+  "feedback_model": {
+    "status": "first-order 20 Hz hypothesis motivated by existing real q/dq data, not a full identified servo model",
+    "physics_dt": 0.005,
+    "control_dt": 0.02,
+    "equation": "y[n]=b0*x[n]+b1*x[n-1]-a1*y[n-1]",
+    "b0": 0.24523727525278555,
+    "b1": 0.24523727525278555,
+    "a1": -0.5095254494944288,
+    "reset": "input and output initialized to current post-reset joint velocity",
+    "deployment": "use existing hardware-reported velocity; do NOT add another filter"
+  },
+  "smoke_command": "bash elf3.sh scripts/train_elf3_feedback.py --task elf3_dwaq_feedback_v1 --headless --num-envs 64 --iterations 20 --trace-seconds 10 --run-name smoke",
+  "formal_command": "bash elf3.sh scripts/train_elf3_feedback.py --task elf3_dwaq_feedback_v1 --headless --num-envs 4096 --iterations 100001 --run-name feedback_scratch_4096_seed42 --swanlab-project DWAQ",
+  "save_interval": 500,
+  "automatic_training_restart": false,
+  "resume": "explicit --resume requires an identical new experiment contract; initial random/test/old-version weights are not formal starting points",
+  "resume_command": "bash elf3.sh scripts/train_elf3_feedback.py --task elf3_dwaq_feedback_v1 --headless --device cuda:0 --num-envs 4096 --iterations 100001 --seed 42 --run-name feedback_resume --resume logs/elf3_dwaq_feedback_v1/RUN/model_N.pt --swanlab-project DWAQ",
+  "resume_semantics": "iterations is the total update count from zero; resume starts at the saved completed index plus one; per-environment physics, random generator and terrain curriculum state are reinitialized",
+  "swanlab": "New launches create an isolated run; attaching to an existing run uses repair_swanlab_scalars.py with ACK cursors, optional event-log-dir and elapsed-time offset. Never overwrite overlapping scalar steps or run two uploaders for the same state.",
+  "export_command": "bash elf3.sh scripts/export_elf3_dwaq.py --checkpoint PATH/model_N.pt --output NEW_DIRECTORY",
+  "play_limitation": "The strict training-recipe contract currently rejects generic play.py overrides such as num_envs or terrain; export first for Sim2Sim. No evaluation-time contract relaxation is included.",
+  "hardware_observation": {
+    "date": "2026-10-21",
+    "iteration": 48500,
+    "source": "user report, same robot and deployment, only the model changed",
+    "outcome": "no visible walking tremor observed in this test",
+    "quantitative_new_hardware_log": false,
+    "single_change_causality_established": false
+  },
+  "acceptance": ["unit tests and finite 64-environment smoke before formal training",
+    "mean-context frozen-weight PPO probability ratio equals one",
+    "physical 200 Hz traces are not 50 Hz target traces",
+    "stable matched-speed actual joint/gyro vibration comparison, not random-policy smoke as performance evidence",
+    "velocity tracking, gait and obstacle performance must not be traded away for a quieter output"],
+  "artifacts": ["params/env.yaml", "params/agent.yaml", "configuration_audit.json", "initialization.json",
+    "contact_runtime_audit.json", "TensorBoard", "optional SwanLab sidecar", "optional physics_trace.npz",
+    "training_exit.json", "model_N.pt"]
+}

@@ -12,12 +12,20 @@ def check_source_manifest(root):
     root = Path(root).resolve()
     manifest = json.loads((root / "docs/elf3_0918_training_manifest.json").read_text())
     checked = 0
+    expected_files = {}
     for group in ("baseline_training_files", "release_files"):
-        for relative, expected in manifest[group].items():
-            path = root / relative
-            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
-                raise ValueError(f"0918 source/asset drift: {relative}")
-            checked += 1
+        expected_files.update(manifest[group])
+    # Keep the original 0918 fingerprints as provenance. Explicit, versioned
+    # opt-in extensions have their own hashes; never call them byte-identical.
+    extension = manifest.get("compatible_source_extensions", {})
+    extension_files = extension.get("files_sha256", {})
+    replaced = sorted(set(expected_files) & set(extension_files))
+    expected_files.update(extension_files)
+    for relative, expected in expected_files.items():
+        path = root / relative
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise ValueError(f"0918 source/asset drift (including approved extensions): {relative}")
+        checked += 1
     for relative, expected in manifest.get("physical_files_sha256", {}).items():
         if hashlib.sha256((root / relative).read_bytes()).hexdigest() != expected:
             raise ValueError(f"Published physical-file bytes changed: {relative}")
@@ -31,7 +39,10 @@ def check_source_manifest(root):
         physical_validation = metadata.verify_retained_assets(asset, contract)
     return {"baseline_commit": manifest["baseline_commit"], "verified_source_files": checked,
             "retained_physical_asset_checked": True, "git_head_independent": True,
-            "physical_validation": physical_validation}
+            "physical_validation": physical_validation,
+            "compatible_extension_version": extension.get("version"),
+            "explicitly_extended_source_files": replaced,
+            "byte_identical_to_baseline": not bool(replaced)}
 
 
 def compare_saved_run(cfg, agent, reference_run):

@@ -21,9 +21,15 @@ class ActorCritic_DWAQ(nn.Module):
         obs_dim: int,
         activation: str = "elu",
         init_noise_std: float = 1.0,
+        context_mode: str = "sampled",
     ):
         super().__init__()
 
+        if context_mode not in ("sampled", "mean"):
+            raise ValueError(f"Unsupported DWAQ context_mode: {context_mode!r}")
+        # Only the actor context changes. The auxiliary beta-VAE remains stochastic.
+        # Keep the legacy sampled path as the default for existing tasks/checkpoints.
+        self.context_mode = context_mode
         self.obs_dim = obs_dim
 
         self.activation = get_activation(activation)
@@ -178,7 +184,10 @@ class ActorCritic_DWAQ(nn.Module):
         Returns:
             Sampled actions from policy distribution
         """
-        code, _, _, _, _, _, _ = self.cenet_forward(obs_history)
+        if self.context_mode == "mean":
+            code = self._mean_context(obs_history)
+        else:
+            code, _, _, _, _, _, _ = self.cenet_forward(obs_history)
         observations = torch.cat((code, observations), dim=-1)
         self.update_distribution(observations)
         return self.distribution.sample()
@@ -201,11 +210,15 @@ class ActorCritic_DWAQ(nn.Module):
 
     def deterministic_action_mean(self, observations, obs_history):
         """Return the actor mean using encoder means instead of sampled latents."""
+        code = self._mean_context(obs_history)
+        return self.actor(torch.cat((code, observations), dim=-1))
+
+    def _mean_context(self, obs_history):
+        """Differentiable actor context without VAE sampling or reconstruction."""
         encoded = self.encoder(obs_history)
         mean_vel = self.encode_mean_vel(encoded)
         mean_latent = self.encode_mean_latent(encoded)
-        code = torch.cat((mean_vel, mean_latent), dim=-1)
-        return self.actor(torch.cat((code, observations), dim=-1))
+        return torch.cat((mean_vel, mean_latent), dim=-1)
 
     def evaluate(self, critic_observations, **kwargs):
         """Evaluate critic value for given observations."""

@@ -90,7 +90,7 @@ class DWAQOnPolicyRunner:
         policy_class = eval(policy_class_name)
 
         # Filter policy config to only include ActorCritic_DWAQ supported params
-        dwaq_supported_params = ["activation", "init_noise_std"]
+        dwaq_supported_params = ["activation", "init_noise_std", "context_mode"]
         filtered_policy_cfg = {k: v for k, v in self.policy_cfg.items() if k in dwaq_supported_params}
 
         # Create actor-critic with DWAQ architecture

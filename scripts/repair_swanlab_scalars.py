@@ -19,6 +19,14 @@ from tensorboard.backend.event_processing.event_file_loader import LegacyEventFi
 from tensorboard.util import tensor_util
 
 
+TIME_AXIS_TAGS = frozenset(("Train/mean_reward/time", "Train/mean_episode_length/time"))
+
+
+def metric_index(tag, step, time_offset_seconds=0):
+    """Translate only the explicit elapsed-time plots, never iteration numbers."""
+    return int(step) + (time_offset_seconds if tag in TIME_AXIS_TAGS else 0)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--log-dir", type=Path, required=True)
@@ -27,8 +35,17 @@ def main():
     parser.add_argument("--batch-size", type=int, default=5000)
     parser.add_argument("--workers", type=int, choices=(1, 2, 3, 4), default=1)
     parser.add_argument("--restore-running", action="store_true", help="Resume cloud state and maintain its heartbeat while training is alive")
+    parser.add_argument("--event-log-dir", type=Path,
+                        help="Read events from a resumed training directory; retain this run's ACK state")
+    parser.add_argument("--time-offset-seconds", type=int, default=0,
+                        help="Elapsed-time axis offset when attaching a resumed training segment")
+    parser.add_argument("--finish-on-training-exit", action="store_true",
+                        help="Finalize the existing run using the event directory's training_exit.json")
     args = parser.parse_args()
     directory = args.log_dir.resolve(strict=True)
+    event_directory = (args.event_log_dir or directory).resolve(strict=True)
+    if args.time_offset_seconds < 0:
+        parser.error("--time-offset-seconds must not be negative")
     lock = (directory / "swanlab_scalar_repair.lock").open("a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     process = psutil.Process(args.training_pid)
@@ -37,6 +54,11 @@ def main():
     previous = json.loads(state_path.read_text()) if state_path.exists() else {}
     if previous and previous["run_path"] != args.run_path:
         raise ValueError("Repair state belongs to a different run")
+    if "event_log_dir" in previous and (
+        previous["event_log_dir"] != str(event_directory)
+        or previous.get("time_offset_seconds", 0) != args.time_offset_seconds
+    ):
+        raise ValueError("Event source/time-axis mapping differs from acknowledged upload state")
     cursors = previous.get("cursors", {})
     sent = previous.get("scalars_uploaded", 0)
     if args.batch_size <= 0:
@@ -121,7 +143,8 @@ def main():
                 "training_pid": args.training_pid, "training_alive": alive,
                 "updated_at": time.time(), "scalars_uploaded": sent,
                 "last_iteration": cursors.get("Train/mean_reward"), "cursors": cursors,
-                "pending_scalars": len(pending)}
+                "pending_scalars": len(pending), "event_log_dir": str(event_directory),
+                "time_offset_seconds": args.time_offset_seconds}
         temporary = state_path.with_suffix(".tmp")
         temporary.write_text(json.dumps(data, indent=2) + "\n")
         temporary.replace(state_path)
@@ -131,12 +154,13 @@ def main():
     while True:
         try:
             if not pending:
-                for path in sorted(directory.glob("events.out.tfevents.*")):
+                for path in sorted(event_directory.glob("events.out.tfevents.*")):
                     if path not in loaders:
                         loaders[path] = LegacyEventFileLoader(str(path))
                     for event in loaders[path].Load():
                         for item in event.summary.value:
-                            if event.step <= cursors.get(item.tag, -1):
+                            index = metric_index(item.tag, event.step, args.time_offset_seconds)
+                            if index <= cursors.get(item.tag, -1):
                                 continue
                             if item.HasField("simple_value"):
                                 value = item.simple_value
@@ -147,7 +171,7 @@ def main():
                                 value = float(array.reshape(-1)[0])
                             else:
                                 continue
-                            pending.append({"key": item.tag, "index": int(event.step),
+                            pending.append({"key": item.tag, "index": index,
                                             "data": float(value) if math.isfinite(value) else "nan",
                                             "create_time": datetime.fromtimestamp(event.wall_time, timezone.utc).isoformat()})
             missing = {metric["key"] for metric in pending} - known_columns
@@ -202,6 +226,22 @@ def main():
                 break
         time.sleep(5)
     executor.shutdown(wait=True)
+    if args.finish_on_training_exit and not training_alive() and not pending:
+        exit_path = event_directory / "training_exit.json"
+        success = exit_path.exists() and json.loads(exit_path.read_text()).get("success", False)
+        owner, project, slug = args.run_path.split("/")
+        body = {"state": "FINISHED" if success else "CRASHED", "from": "sdk",
+                "finishedAt": datetime.now(timezone.utc).isoformat()}
+        for attempt in range(3):
+            try:
+                http("PUT", f"/project/{owner}/{project}/runs/{slug}/state", body)
+                print(f"Existing run finalized: {body['state']}", flush=True)
+                break
+            except Exception as error:
+                print(f"Final state retry after {type(error).__name__}", flush=True)
+                if attempt == 2:
+                    raise
+                time.sleep(5)
 
 
 if __name__ == "__main__":

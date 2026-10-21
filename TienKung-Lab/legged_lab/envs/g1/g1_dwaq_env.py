@@ -454,6 +454,7 @@ class G1DwaqEnv(VecEnv):
             self.scene.write_data_to_sim()
             self.sim.step(render=False)
             self.scene.update(dt=self.physics_dt)
+            self._post_physics_step()
 
         if not self.headless:
             self.sim.render()
@@ -490,6 +491,10 @@ class G1DwaqEnv(VecEnv):
 
         # Isaac Lab style: return 4 values
         return actor_obs, reward_buf, self.reset_buf, self.extras
+
+    def _post_physics_step(self):
+        """Optional sensor-model hook after one physics step; legacy tasks do nothing."""
+        pass
 
     def _update_gait_phase(self):
         """Update gait phase for bipedal walking.

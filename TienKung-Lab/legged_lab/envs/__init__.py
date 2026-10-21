@@ -93,3 +93,16 @@ task_registry.register(
     Elf3DwaqEnvCfg(),
     Elf3DwaqUpperBodySymmetryPoseAgentCfg(),
 )
+
+# Opt-in experiments. Existing task instances and defaults are unchanged.
+from legged_lab.envs.elf3.elf3_feedback_config import (
+    Elf3DwaqFeedbackAgentCfg, Elf3DwaqFeedbackEnvCfg,
+    Elf3DwaqConsistentAgentCfg, Elf3DwaqConsistentEnvCfg,
+)
+from legged_lab.envs.elf3.elf3_feedback_env import Elf3DwaqFeedbackEnv
+from legged_lab.envs.elf3.feedback_runner import Elf3DwaqFeedbackRunner
+
+task_registry.register("elf3_dwaq_feedback_v1", Elf3DwaqFeedbackEnv,
+                       Elf3DwaqFeedbackEnvCfg(), Elf3DwaqFeedbackAgentCfg())
+task_registry.register("elf3_dwaq_consistent_v1", Elf3DwaqFeedbackEnv,
+                       Elf3DwaqConsistentEnvCfg(), Elf3DwaqConsistentAgentCfg())

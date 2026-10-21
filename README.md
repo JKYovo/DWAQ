@@ -7,7 +7,7 @@
 
 本项目将 DWAQ（DreamWaQ 风格的历史观测编码器 + PPO）适配到 **ELF3 29 自由度人形机器人**，用于无视觉地形适应、盲走和楼梯训练。训练框架基于 Isaac Lab、TienKung-Lab、Legged Lab 与 RSL-RL。
 
-公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前版本采用 `2362a3a` 的 0918 训练配置并更新 ELF3 资产参数，不启用动作延迟；历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
+公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前训练使用下述 `elf3_dwaq_feedback_v1`；原 `2362a3a` 的 0918 训练任务与资产配置仍保留，不启用动作延迟。历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
 
 ## 功能
 
@@ -22,9 +22,27 @@
 
 > DWAQ 本身不包含 AMP。本项目的 ELF3 DWAQ 训练也不加载 AMP 动作数据或 AMP 权重。
 
-## 稳定任务
+## 当前反馈训练版本
 
-推荐任务：
+`elf3_dwaq_feedback_v1` 在 0918 基线上独立启用三项改动：训练关节速度观测使用 20 Hz 低通模型、Actor 的采集／PPO 更新／部署统一使用 CENet 均值 context、critic 使用最新帧脚接触力。资产、隐式 PD、奖励、动作尺度与 `500 → 29` 部署接口不变；辅助 VAE 和训练动作探索仍保留。
+
+```bash
+./elf3.sh scripts/train_elf3_feedback.py \
+  --task elf3_dwaq_feedback_v1 --headless --device cuda:0 \
+  --num-envs 4096 --iterations 100001 --seed 42 \
+  --run-name feedback20hz_mean_context_scratch_4096_seed42 \
+  --swanlab-project DWAQ
+```
+
+日志位于 `logs/elf3_dwaq_feedback_v1/`，每 500 轮保存。默认从零训练；只接受本实验同配置 checkpoint 的显式 `--resume PATH/model_N.pt`，`--iterations` 表示包含已有轮次的总目标更新数，`100001` 对应最终 `model_100000.pt`。SwanLab 使用独立进程补传，使用前需完成登录；技术中断不会自动重启训练。
+
+48500 轮模型已有用户同整机、同部署仅替换模型后不再观察到行走抖动的反馈，但三项改动的单独贡献与更多工况尚未验证。部署使用现有硬件报告速度，**不要再叠加该训练低通模型**。参数、导出和限制见 [反馈实验说明](docs/elf3_feedback_v1.json)；`elf3_dwaq_consistent_v1` 保留相同一致性修正但使用理想速度观测，仅作未训练的对照任务。
+
+以下训练和 Play 示例保留为原 0918 基线的用法；反馈实验导出仍使用 `scripts/export_elf3_dwaq.py`。其严格训练合约暂不支持通用 Play 修改环境数或地形后加载，可导出后做 Sim2Sim。
+
+## 0918 基线任务
+
+保留任务：
 
 ```text
 elf3_dwaq_upper_symmetry_pose
@@ -78,7 +96,7 @@ bash scripts/setup_elf3_env.sh
 ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 ```
 
-## 从头训练 10 万轮
+## 0918 基线从头训练 10 万轮
 
 ```bash
 ./elf3.sh scripts/train_0918_melody.py \
@@ -230,7 +248,8 @@ output: actions [batch, 29]
 ├── requirements-elf3.txt                # ELF3 环境依赖
 ├── scripts/
 │   ├── setup_elf3_env.sh                # 环境安装
-│   ├── train_0918_melody.py             # 当前从零训练入口
+│   ├── train_elf3_feedback.py           # 当前反馈实验训练入口
+│   ├── train_0918_melody.py             # 保留的 0918 基线入口
 │   ├── export_elf3_dwaq.py              # 确定性导出
 │   ├── sim2sim_elf3_dwaq.py             # MuJoCo 回放
 │   └── check_elf3.py                    # 资产/接口/训练检查

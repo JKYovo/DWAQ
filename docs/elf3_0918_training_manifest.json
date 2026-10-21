@@ -3,6 +3,27 @@
   "baseline_commit": "2362a3ade4f12846ee26c2da0d33a6634cad5349",
   "task": "elf3_dwaq_upper_symmetry_pose",
   "recipe": "elf3_0918_sympose_armature_0p01_v3",
+  "compatible_source_extensions": {
+    "version": "elf3_feedback_v1",
+    "reason": "Explicit opt-in additions. Original 0918 hashes remain below as provenance; default sampled actor and no-op physics hook preserve old task behavior, not byte identity.",
+    "files_sha256": {
+      "TienKung-Lab/legged_lab/envs/__init__.py": "da11b3c65d912cec8b03a8c9641c8a3cef8fad5aa37c8b99053521324fa13a29",
+      "TienKung-Lab/legged_lab/envs/g1/g1_dwaq_env.py": "aad7f019881efc2a732097d93cd7c30fdf5fb77b284e5e0637d9c09a77cd12e7",
+      "TienKung-Lab/rsl_rl/rsl_rl/modules/actor_critic_DWAQ.py": "a62ca4cf1f3de3c65d2de83b74160697279cad5495865d5b482b667742079835",
+      "TienKung-Lab/rsl_rl/rsl_rl/runners/dwaq_on_policy_runner.py": "a0b5626a2ddd1370aad9674dbfb2eb6e2e27cb68f7ca32a31e34a67c1f47a1de",
+      "scripts/release_0918_checks.py": "a040dad4d991c62ddf84438bfa5fc57746c62dbe906d7da4f1b490e338c7fde8",
+      "TienKung-Lab/legged_lab/envs/elf3/feedback.py": "d6fc450e6d620e6cb031c902db6d07372bcadcb11cca092cc1f62fdbbfa902d3",
+      "TienKung-Lab/legged_lab/envs/elf3/elf3_feedback_env.py": "a43a13e16b9e9d06424d02a35a25ccd8adaed4ee4d3e88d05f40cbd536178937",
+      "TienKung-Lab/legged_lab/envs/elf3/elf3_feedback_config.py": "ba06541304af1ccfffecfccd7870f8b867380c0be2e306be6a4320dcf7878c92",
+      "TienKung-Lab/legged_lab/envs/elf3/feedback_runner.py": "7fd0c7742aa57f8973a49067f5e3c099d88b87d17e7668ea7dc9b671598c9cdf",
+      "TienKung-Lab/legged_lab/envs/elf3/feedback_contract.py": "28013da352e64c07e3bd5a2b6df82fb859446612758708a46ec6498816f94a1b",
+      "scripts/train_elf3_feedback.py": "1f285e3ebf5862b405113328b0bae30a2d00fd9aa6a6c083d9e758159e2ebf9f",
+      "scripts/feedback_run_tools.py": "e03f1a845baba98434ceee6535acecc6ab780ef4704cbd093abfdb0c6bb9fc33",
+      "scripts/feedback_collision_audit.py": "037bb2a5a09cee2a770b9c421ffade8ff8ccd361f8182878389ea888615e9c79",
+      "docs/elf3_feedback_v1.json": "725ed4c01be881e0bd4b12d9f3185b8131cf2ab6f19b22e37eb12370cad9de4e",
+      "scripts/repair_swanlab_scalars.py": "53673e6f727ed377c2aaa6e38925189c00196f4732339c4582e546c50c398022"
+    }
+  },
   "baseline_training_files": {
     "TienKung-Lab/legged_lab/envs/__init__.py": "10aac525ab18d09d73707fbb00149706fc1f9122b8e2b83db5d709c61ffb930a",
     "TienKung-Lab/legged_lab/envs/base/base_config.py": "be888b888f803ef0e7a6a46946ae8bfbdc32895ac25c416daa2ef2e533bdde3c",
