@@ -17,6 +17,7 @@
 # and is distributed under the BSD-3-Clause license.
 
 import argparse
+import math
 import os
 
 import cv2
@@ -48,12 +49,20 @@ parser.add_argument("--terrain_color", type=str, default="mdl_shingles",
                     help="Terrain color: concrete/grass/sand/dirt/rock/white/dark (简单颜色), mdl_* (真实MDL材质)")
 parser.add_argument("--no_gait", action="store_true",
                     help="Disable gait phase mechanism (for testing models trained without gait)")
+parser.add_argument("--command", type=float, nargs=3, default=None, metavar=("VX", "VY", "WZ"),
+                    help="Fixed body-frame velocity command for play; 0 0 0 tests standing. Disables heading/random commands.")
+parser.add_argument("--max_steps", type=int, default=None,
+                    help="Optional positive control-step limit for a bounded play check; GUI play is unlimited by default.")
 
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 args_cli, hydra_args = parser.parse_known_args()
+if args_cli.command is not None and not all(math.isfinite(value) for value in args_cli.command):
+    parser.error("--command requires three finite velocities")
+if args_cli.max_steps is not None and args_cli.max_steps <= 0:
+    parser.error("--max_steps must be positive")
 # Start camera rendering for tasks that require RGB/depth sensing
 if args_cli.task and ("sensor" in args_cli.task or "rgb" in args_cli.task or "depth" in args_cli.task):
     args_cli.enable_cameras = True
@@ -69,6 +78,30 @@ from legged_lab.envs import *  # noqa:F401, F403
 from legged_lab.utils.cli_args import update_rsl_rl_cfg
 from legged_lab.terrains.terrain_generator_cfg import STAIRS_ONLY_HARD_CFG, STAIRS_SLOPE_HARD_CFG
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, NVIDIA_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
+
+
+def configure_fixed_play_command(command_cfg, command):
+    """Configure exact play-only commands before constructing the environment.
+
+    None preserves the legacy play configuration. Fixed commands must disable
+    the heading controller as well as set all three sampling ranges, otherwise
+    a zero translational request could still produce a random turning request.
+    This does not alter a policy, observation layout, action or training recipe.
+    """
+    if command is None:
+        return None
+    if len(command) != 3:
+        raise ValueError("Expected three play velocities [vx, vy, wz]")
+    values = tuple(float(value) for value in command)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError("Play velocities must be finite")
+    command_cfg.heading_command = False
+    command_cfg.rel_heading_envs = 0.0
+    command_cfg.ranges.heading = None
+    command_cfg.rel_standing_envs = 1.0 if all(value == 0.0 for value in values) else 0.0
+    for name, value in zip(("lin_vel_x", "lin_vel_y", "ang_vel_z"), values):
+        setattr(command_cfg.ranges, name, (value, value))
+    return values
 
 
 def play():
@@ -90,6 +123,9 @@ def play():
     env_cfg.commands.ranges.lin_vel_y = (0.0, 0.0)
     env_cfg.commands.debug_vis = False  # Disable velocity command arrows
     env_cfg.scene.height_scanner.drift_range = (0.0, 0.0)
+    fixed_command = configure_fixed_play_command(env_cfg.commands, args_cli.command)
+    if fixed_command is not None:
+        print(f"[INFO] Fixed play command [vx, vy, wz]: {fixed_command}; heading controller disabled.")
 
     # Disable gait phase if --no_gait is specified
     if args_cli.no_gait and hasattr(env_cfg, 'robot') and hasattr(env_cfg.robot, 'gait_phase'):
@@ -284,7 +320,23 @@ def play():
 
     runner_class: OnPolicyRunner | AmpOnPolicyRunner | DWAQOnPolicyRunner = eval(agent_cfg.runner_class_name)
     runner = runner_class(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
-    runner.load(resume_path, load_optimizer=False)
+    if isinstance(runner, Elf3DwaqFeedbackRunner):
+        # Play changes terrain, noise and environment count by design. Keep the
+        # full inference identity and reward checks, not the resume-only recipe
+        # hash. Training resume and both strict ELF3 runner loaders stay intact.
+        from legged_lab.elf3_contract import verify_retained_assets
+        from legged_lab.utils.elf3_play_contract import validate_play_checkpoint
+
+        verify_retained_assets()
+        saved = torch.load(resume_path, map_location="cpu", weights_only=False)
+        validate_play_checkpoint(saved, runner.contract())
+        # The two ELF3 parent loaders also require full recipe equality. Call
+        # the model loader directly only after the play-specific checks above;
+        # strict state_dict and finite-parameter checks remain in that loader.
+        DWAQOnPolicyRunner.load(runner, resume_path, load_optimizer=False)
+        print("[INFO] ELF3 play checkpoint verified; model only, optimizer not loaded.")
+    else:
+        runner.load(resume_path, load_optimizer=False)
 
     # Check if using ActorCriticDepth which requires history and optionally rgb_image
     use_depth_policy = hasattr(runner.alg.policy, 'history_encoder')
@@ -363,12 +415,19 @@ def play():
 
     obs, _ = env.get_observations()
     extras = env.extras  # Get initial extras
+    fixed_command_tensor = None
+    if fixed_command is not None:
+        fixed_command_tensor = torch.tensor(fixed_command, device=env.device,
+                                            dtype=env.command_generator.command.dtype)
+        torch.testing.assert_close(env.command_generator.command,
+                                   fixed_command_tensor.expand_as(env.command_generator.command), atol=1e-6, rtol=0)
     
     # Reset trajectory history with initial observation if using depth policy
     if use_depth_policy:
         normalized_obs = runner.obs_normalizer(obs) if runner.empirical_normalization else obs
         trajectory_history = torch.cat((trajectory_history[:, 1:], normalized_obs.unsqueeze(1)), dim=1)
 
+    completed_steps = 0
     while simulation_app.is_running():
 
         with torch.inference_mode():
@@ -380,6 +439,10 @@ def play():
             
             # All envs now return (obs, rewards, dones, extras) - Isaac Lab convention
             obs, _, dones, extras = env.step(actions)
+            completed_steps += 1
+            if args_cli.max_steps is not None and fixed_command_tensor is not None:
+                torch.testing.assert_close(env.command_generator.command,
+                    fixed_command_tensor.expand_as(env.command_generator.command), atol=1e-6, rtol=0)
             
             # Reset history for terminated environments
             if use_depth_policy:
@@ -409,11 +472,19 @@ def play():
                 except Exception as e:
                     pass  # Silently ignore errors
 
+        if args_cli.max_steps is not None and completed_steps >= args_cli.max_steps:
+            print(f"[INFO] Bounded play completed {completed_steps} control steps.")
+            if fixed_command_tensor is not None:
+                print(f"[INFO] Fixed command verified on all steps: {list(fixed_command)}")
+            break
+
 
     if isinstance(env, Elf3DwaqEnv):
         env.close()
 
 
 if __name__ == "__main__":
-    play()
-    simulation_app.close()
+    try:
+        play()
+    finally:
+        simulation_app.close()

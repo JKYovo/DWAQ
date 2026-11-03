@@ -1,0 +1,83 @@
+{
+  "task": "elf3_dwaq_still_v2",
+  "status": "published_training_recipe; technical validation passed, no final performance acceptance claim",
+  "parent_task": "elf3_dwaq_still",
+  "reference_recipe": "elf3_dwaq_still_pose_v1; the recipe used to continue still100000 to102500",
+  "initialization": "user explicitly chose from_scratch; do not load102500 or any optimizer",
+  "reward_changes_from_reference_recipe": {
+    "zero_leg_pose": {
+      "names": [
+        "l_hip_y_joint",
+        "l_knee_y_joint",
+        "r_hip_y_joint",
+        "r_knee_y_joint"
+      ],
+      "unchanged_all_command_weight": -0.02,
+      "incremental_zero_weight": -0.13,
+      "total_zero_weight": -0.15,
+      "reference102500_total_zero_weight": -0.1
+    },
+    "zero_waist_pose": {
+      "names": [
+        "waist_y_joint",
+        "waist_x_joint",
+        "waist_z_joint"
+      ],
+      "unchanged_all_command_weight_in_arms_waist_group": -0.2,
+      "incremental_zero_weight": -0.1,
+      "total_zero_weight": -0.3,
+      "arm_joint_weights": "unchanged; no extra arm term"
+    },
+    "formula": "sum absolute actual joint position minus asset default position using identical named native indices",
+    "activation": "finite max(abs(vx,vy,wz)) <= 1e-6, immediate; no settled/contact/timer/terrain gate",
+    "meaning": "soft actual-state costs; no hard joint targets, clamps, action filters or world-height term"
+  },
+  "preserved": {
+    "old_still_and_still_pose_source_and_checkpoints": true,
+    "moving_rewards_and_pose_weights": true,
+    "strict_zero_motion_cost": "original mean absolute raw dq, weight -0.5; not strengthened",
+    "phase": "original still current/all-history fixed [0,0,1,-1] at zero; no v3 phase substitution",
+    "zero_periodic_rewards": "original still gates contact/swing rewards off",
+    "asset_PD_armature_effort_and_velocity_limits": true,
+    "joint_speed_feedback": "original lpf20 observation path; physical actuator PD unchanged",
+    "actor_CENet_PPO_LR_terrain_domain_randomization": true,
+    "commands": "20 percent standing,10-second resampling; unchanged",
+    "upper_body_auxiliary": "mirror0.1,pose0.02; unchanged",
+    "deployment": "500 input /29 output; original still preprocessing embedded in exports"
+  },
+  "training": {
+    "num_envs": 16384,
+    "seed": 42,
+    "steps_per_env": 24,
+    "mini_batches": 4,
+    "epochs": 5,
+    "updates": 100001,
+    "target_checkpoint": 100000,
+    "save_interval": 500,
+    "logger": "TensorBoard plus independent SwanLab sidecar",
+    "automatic_training_restart": false,
+    "automatic_training_stop_monitor": false
+  },
+  "validation": {
+    "cpu_suite": "367 tests,one intentionally skipped; full regression passed before formal launch",
+    "native_smoke": "64 envs x20 updates completed successfully from scratch; model19 is technical-only and is NOT imported into formal training",
+    "native_wiring": "20 envs x600 steps; strict zero/moving transitions,4leg+3waist native indices,L1 formula,raw-history/critic/clock preservation and original gait gates passed",
+    "onnx_max_action_error": 1.4901161193847656e-07,
+    "onnx_max_joint_target_error_rad": 5.558133125305176e-08,
+    "original_still_and_pose_source_files_sha_verified_unchanged": 9,
+    "original_model102500_sha256_verified_unchanged": "212b371cc713a4e7865bae494f9c800a92856193a57334663a19d13cf9ca3fcd",
+    "behavioral_acceptance": "not established by technical smoke; no promise of exact stillness,default pose,or unchanged obstacle success before trained evaluation"
+  },
+  "reproduction": {
+    "environment": "Python3.10 / IsaacSim4.5.0 / IsaacLab v2.1.1; see requirements-elf3.txt and scripts/setup_elf3_env.sh",
+    "setup": "bash scripts/setup_elf3_env.sh",
+    "source_check": "python3 scripts/release_0918_checks.py",
+    "configuration_check": "bash elf3.sh scripts/train_elf3_still_v2.py --verify-config-only --num-envs 16384 --iterations 100001 --headless --device cuda:0",
+    "smoke": "bash elf3.sh scripts/train_elf3_still_v2.py --num-envs 64 --iterations 20 --seed 42 --run-name still_v2_smoke --headless --device cuda:0",
+    "train": "LC_ALL=C.UTF-8 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 bash elf3.sh scripts/train_elf3_still_v2.py --num-envs 16384 --iterations 100001 --seed 42 --run-name still_v2_scratch_16384_seed42 --swanlab-project DWAQ --headless --device cuda:0",
+    "swanlab": "Run bash elf3.sh -m swanlab login on the other host; credentials are local, never committed. Each host creates its own run and local log directory.",
+    "optional_visual_cache": "Default launch does NOT use --use-cached-visual. For an existing verified arrow_x.usd cache only, set ELF3_ARROW_CACHE=/absolute/path/arrow_x.usd and add --use-cached-visual. SHA256 is checked; robot assets and physics are not modified.",
+    "resource_note": "16384 environments used about18.3GiB GPU memory on the reference24GiB RTX4090. Other machines/drivers may differ; do not silently reduce the count when comparing this recipe.",
+    "reproducibility_note": "Same recipe and seed are recorded; GPU/PhysX floating-point ordering and different hardware do not guarantee identical trajectories or metrics."
+  }
+}

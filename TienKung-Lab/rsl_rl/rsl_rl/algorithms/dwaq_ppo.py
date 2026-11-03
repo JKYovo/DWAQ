@@ -166,6 +166,10 @@ class DWAQPPO:
         action_mean = self.policy.deterministic_action_mean(observations, observation_history)
         return torch.square(action_mean[:, action_ids]).mean()
 
+    def _additional_loss(self, observations, observation_history, critic_observations):
+        """Opt-in auxiliary objective; legacy tasks do not add a loss or draw RNG."""
+        return None
+
     def init_storage(
         self,
         num_envs: int,
@@ -426,6 +430,9 @@ class DWAQPPO:
             pose_loss = self._upper_body_pose_loss(obs_batch, obs_hist_batch)
             if pose_loss is not None:
                 loss = loss + self.upper_body_symmetry["pose_coefficient"] * pose_loss
+            additional_loss = self._additional_loss(obs_batch, obs_hist_batch, critic_obs_batch)
+            if additional_loss is not None:
+                loss = loss + additional_loss
 
             # Gradient step
             self._require_finite("total loss", loss)

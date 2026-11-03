@@ -45,7 +45,9 @@ class ReleaseTests(unittest.TestCase):
                  and isinstance(node.args[0].value, str) and node.args[0].value.startswith("elf3_")]
         self.assertEqual(set(tasks), {"elf3_dwaq", "elf3_dwaq_flat", "elf3_dwaq_upper_symmetry",
                                      "elf3_dwaq_upper_symmetry_pose", "elf3_dwaq_consistent_v1",
-                                     "elf3_dwaq_feedback_v1"})
+                                     "elf3_dwaq_feedback_v1", "elf3_dwaq_stand_v1", "elf3_dwaq_stand_v2",
+                                     "elf3_dwaq_still", "elf3_dwaq_still_pose_v1", "elf3_dwaq_still_v2",
+                                     "elf3_dwaq_feedback_still_v2", "elf3_dwaq_feedback_stand_v3"})
 
     def test_asset_limits_and_unchanged_deployment_scale(self):
         contract = json.loads((ROOT / "TienKung-Lab/legged_lab/configs/elf3/contract.json").read_text())

@@ -48,6 +48,10 @@ from rsl_rl.utils import store_code_state
 class DWAQOnPolicyRunner:
     """On-policy runner for DWAQ training."""
 
+    # Opt-in runner subclasses may provide a private algorithm without
+    # registering it in this module's globals. Legacy tasks retain eval().
+    algorithm_class = None
+
     def __init__(
         self,
         env: VecEnv,
@@ -108,7 +112,11 @@ class DWAQOnPolicyRunner:
 
         # Initialize algorithm
         alg_class_name = self.alg_cfg.get("class_name", "DWAQPPO")
-        alg_class = eval(alg_class_name)
+        alg_class = self.algorithm_class
+        if alg_class is None:
+            alg_class = eval(alg_class_name)
+        elif alg_class.__name__ != alg_class_name:
+            raise ValueError("Private algorithm factory does not match saved configuration")
         # DWAQPPO only accepts these parameters (different from standard PPO)
         dwaq_alg_supported_params = [
             "num_learning_epochs", "num_mini_batches", "clip_param",

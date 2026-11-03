@@ -106,3 +106,59 @@ task_registry.register("elf3_dwaq_feedback_v1", Elf3DwaqFeedbackEnv,
                        Elf3DwaqFeedbackEnvCfg(), Elf3DwaqFeedbackAgentCfg())
 task_registry.register("elf3_dwaq_consistent_v1", Elf3DwaqFeedbackEnv,
                        Elf3DwaqConsistentEnvCfg(), Elf3DwaqConsistentAgentCfg())
+
+# Walking is unchanged; only the strict zero-command gait rewards are gated.
+from legged_lab.envs.elf3.elf3_stand_config import Elf3DwaqStandAgentCfg, Elf3DwaqStandEnvCfg
+from legged_lab.envs.elf3.standing_runner import Elf3DwaqStandRunner
+
+task_registry.register("elf3_dwaq_stand_v1", Elf3DwaqFeedbackEnv,
+                       Elf3DwaqStandEnvCfg(), Elf3DwaqStandAgentCfg())
+
+from legged_lab.envs.elf3.elf3_stand_v2_config import Elf3DwaqStandV2AgentCfg, Elf3DwaqStandV2EnvCfg
+from legged_lab.envs.elf3.quiet_env import Elf3DwaqStandV2Env
+from legged_lab.envs.elf3.quiet_runner import Elf3DwaqStandV2Runner
+
+task_registry.register("elf3_dwaq_stand_v2", Elf3DwaqStandV2Env,
+                       Elf3DwaqStandV2EnvCfg(), Elf3DwaqStandV2AgentCfg())
+
+# Minimal original-PPO standing behavior; prior experiments remain available.
+from legged_lab.envs.elf3.elf3_still_config import Elf3DwaqStillAgentCfg, Elf3DwaqStillEnvCfg
+from legged_lab.envs.elf3.still_env import Elf3DwaqStillEnv
+from legged_lab.envs.elf3.still_runner import Elf3DwaqStillRunner
+
+task_registry.register("elf3_dwaq_still", Elf3DwaqStillEnv,
+                       Elf3DwaqStillEnvCfg(), Elf3DwaqStillAgentCfg())
+
+# Isolated continuation: original still behavior plus zero-command leg pose.
+from legged_lab.envs.elf3.elf3_still_pose_config import Elf3DwaqStillPoseAgentCfg, Elf3DwaqStillPoseEnvCfg
+from legged_lab.envs.elf3.still_pose_runner import Elf3DwaqStillPoseRunner
+
+task_registry.register("elf3_dwaq_still_pose_v1", Elf3DwaqStillEnv,
+                       Elf3DwaqStillPoseEnvCfg(), Elf3DwaqStillPoseAgentCfg())
+
+# Still/102500 recipe retained; only zero-command leg/waist pose is stronger.
+from legged_lab.envs.elf3.elf3_still_v2_config import Elf3DwaqStillV2AgentCfg, Elf3DwaqStillV2EnvCfg
+from legged_lab.envs.elf3.still_v2_runner import Elf3DwaqStillV2Runner
+
+task_registry.register("elf3_dwaq_still_v2", Elf3DwaqStillEnv,
+                       Elf3DwaqStillV2EnvCfg(), Elf3DwaqStillV2AgentCfg())
+
+# Recommended ELF3 feedback task, with an integrated replacement zero objective.
+from legged_lab.envs.elf3.elf3_feedback_still_v2_config import (
+    Elf3DwaqFeedbackStillV2AgentCfg, Elf3DwaqFeedbackStillV2EnvCfg,
+)
+from legged_lab.envs.elf3.feedback_still_v2_env import Elf3DwaqFeedbackStillV2Env
+from legged_lab.envs.elf3.feedback_still_v2_runner import Elf3DwaqFeedbackStillV2Runner
+
+task_registry.register("elf3_dwaq_feedback_still_v2", Elf3DwaqFeedbackStillV2Env,
+                       Elf3DwaqFeedbackStillV2EnvCfg(), Elf3DwaqFeedbackStillV2AgentCfg())
+
+# Replacement zero-command objective; prior run identities remain immutable.
+from legged_lab.envs.elf3.elf3_feedback_stand_v3_config import (
+    Elf3DwaqFeedbackStandV3AgentCfg, Elf3DwaqFeedbackStandV3EnvCfg,
+)
+from legged_lab.envs.elf3.feedback_stand_v3_env import Elf3DwaqFeedbackStandV3Env
+from legged_lab.envs.elf3.feedback_stand_v3_runner import Elf3DwaqFeedbackStandV3Runner
+
+task_registry.register("elf3_dwaq_feedback_stand_v3", Elf3DwaqFeedbackStandV3Env,
+                       Elf3DwaqFeedbackStandV3EnvCfg(), Elf3DwaqFeedbackStandV3AgentCfg())
