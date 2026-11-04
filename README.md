@@ -57,17 +57,6 @@
 
 以下训练和 Play 示例保留为原 0918 基线的用法；反馈实验导出仍使用 `scripts/export_elf3_dwaq.py`。其严格训练合约暂不支持通用 Play 修改环境数或地形后加载，可导出后做 Sim2Sim。
 
-## 0918 基线任务
-
-保留任务：
-
-```text
-elf3_dwaq_upper_symmetry_pose
-```
-
-上肢镜像／姿态辅助系数为 `0.1／0.02`；学习率初始 `1e-4`，adaptive 范围 `1e-5～3e-4`。
-资产采用隐式 PD、全部关节 `armature=0.01` 和 `20 rad/s` 速度限幅；默认姿态及动作尺度不变，详细关节参数见 [elf3.py](TienKung-Lab/legged_lab/assets/elf3/elf3.py)。
-
 ## 环境
 
 已验证环境：
@@ -112,27 +101,6 @@ bash scripts/setup_elf3_env.sh
 ```bash
 ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 ```
-
-## 0918 基线从头训练 10 万轮
-
-```bash
-./elf3.sh scripts/train_0918_melody.py \
-  --headless \
-  --num-envs=4096 \
-  --iterations=100001 \
-  --run-name=elf3_dwaq_0918_100k \
-  --swanlab-project=DWAQ
-```
-
-训练日志保存在：
-
-```text
-logs/elf3_dwaq_upper_symmetry_pose/<时间戳>_<run_name>/
-```
-
-上述入口固定 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，从零训练并每 500 轮保存。TensorBoard 为主日志，SwanLab 由独立进程补传；使用前需完成 SwanLab 登录。
-`--iterations=100001` 对应编号 0～100000；该入口不加载旧权重。
-
 ### 续训
 
 ```bash
