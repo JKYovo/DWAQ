@@ -7,7 +7,7 @@
 
 本项目将 DWAQ（DreamWaQ 风格的历史观测编码器 + PPO）适配到 **ELF3 29 自由度人形机器人**，用于无视觉地形适应、盲走和楼梯训练。训练框架基于 Isaac Lab、TienKung-Lab、Legged Lab 与 RSL-RL。
 
-公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前训练使用下述 `elf3_dwaq_feedback_v1`；原 `2362a3a` 的 0918 训练任务与资产配置仍保留，不启用动作延迟。历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
+公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前训练为下述 `still_v2 + ankle_cost_v1` 实验；`elf3_dwaq_feedback_v1` 和原 `2362a3a` 的 0918 训练任务与资产配置仍保留。当前实验不启用动作延迟。历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
 
 ## 功能
 
@@ -22,7 +22,24 @@
 
 > DWAQ 本身不包含 AMP。本项目的 ELF3 DWAQ 训练也不加载 AMP 动作数据或 AMP 权重。
 
-## 当前反馈训练版本
+## 当前 still-v2 踝部实验
+
+在 `elf3_dwaq_still_v2` 的零指令静止／腿腰默认姿态目标上，仅增加四踝力矩平方成本 **−0.0005** 和相位支撑期足速成本 **−1.0**。完整复用当前资产、隐式 PD、`armature=0.01`、20 Hz 关节速度观测模型、CENet/PPO 与 `500 → 29` 接口；不包含尚未实施的轻落地、膝力矩、高度或动作延迟改动。
+
+公开入口不依赖作者的旧日志或 SwanLab run；下面命令**从零使用当前最终奖励配置**：
+
+```bash
+./elf3.sh scripts/train_elf3_ankle_cost.py \
+  --headless --device cuda:0 --num-envs 16384 --iterations 100001 \
+  --run-name still_v2_ankle_cost_scratch_16384_seed42 \
+  --swanlab-project DWAQ
+```
+
+固定 seed 42，每 500 轮保存；默认 TensorBoard，可选 SwanLab 使用自己的登录账号和新 run。日志写入 `logs/elf3_dwaq_still_v2_ankle_cost_v1/`。`--iterations` 是总目标更新数，`100001` 对应 `model_100000.pt`。
+
+本机当前实验实际上从原 still-v2 的 `model_18500.pt` 恢复权重、Adam 和学习率；从零命令不能复现这一段已有训练历史。有兼容父权重时使用 `--parent-checkpoint` 和 `--parent-sha256`；同奖励版本续训使用 `--resume`，都保持严格契约检查并写新目录。完整公式、命令、限制见 [实验配置](docs/elf3_ankle_cost_v1.json)。`resume_elf3_ankle_cost.py` / `resume_elf3_still_v2.py` 仅归档原实验的原日志／原 SwanLab 恢复流程，不是其他机器的默认入口。
+
+## 反馈训练基线
 
 `elf3_dwaq_feedback_v1` 在 0918 基线上独立启用三项改动：训练关节速度观测使用 20 Hz 低通模型、Actor 的采集／PPO 更新／部署统一使用 CENet 均值 context、critic 使用最新帧脚接触力。资产、隐式 PD、奖励、动作尺度与 `500 → 29` 部署接口不变；辅助 VAE 和训练动作探索仍保留。
 

@@ -1,0 +1,161 @@
+{
+  "version": "elf3_dwaq_still_v2_ankle_cost_v1",
+  "parent_task": "elf3_dwaq_still_v2",
+  "public_entrypoint": "scripts/train_elf3_ankle_cost.py",
+  "entrypoint_kind": "standalone; direct environment/runner construction, not a new global task_registry entry",
+  "environment_class": "Elf3DwaqAnkleCostEnv",
+  "runner_class": "Elf3DwaqAnkleCostRunner",
+  "status": "Experimental active training recipe; no final behavioral acceptance or hardware-generalization guarantee.",
+  "scope": {
+    "new_rewards_only": [
+      "ankle_torque_l2",
+      "stance_foot_speed_cost"
+    ],
+    "not_included": [
+      "touchdown_velocity_cost",
+      "contact_force_derivative_cost",
+      "new_walking_knee_pose_cost",
+      "base_height_reward",
+      "knee_torque_cost",
+      "hip_torque_cost",
+      "action_delay_randomization",
+      "joint_friction_randomization"
+    ],
+    "active_training_core_sources_sha256": {
+      "ankle_cost.py": "b2b68c10af21c8bb962e98557610ff38a8347a2f0516741068b45b81ef929e6e",
+      "ankle_cost_contract.py": "e5d0ecdede69cf631163cebc91a548409bca9e8f4841c9f99ed2631adbddfefa",
+      "ankle_cost_rewards.py": "ef3e0ed90981dcd111e066a7e65adaa975839f99b87f1a7e6852bf268d87004e"
+    }
+  },
+  "rewards": {
+    "ankle_torque_l2": {
+      "weight": -0.0005,
+      "joints": [
+        "l_ankle_y_joint",
+        "l_ankle_x_joint",
+        "r_ankle_y_joint",
+        "r_ankle_x_joint"
+      ],
+      "formula": "sum of squared robot.data.applied_torque over exactly four named ankle joints",
+      "activation": "all commands including exact zero",
+      "channel_caveat": "Implicit-actuator nominal torque estimate; not measured real motor torque or an exact recovered PhysX contact reaction."
+    },
+    "stance_foot_speed_cost": {
+      "weight": -1,
+      "feet": [
+        "l_ankle_x_link",
+        "r_ankle_x_link"
+      ],
+      "formula": "sum_feet I_stance(phase) * (1 - exp(-200 * mean_substep_speed_norm**2))",
+      "speed": "mean of four actual world-frame foot-link 3D speed norms at 200Hz; norm before averaging",
+      "phase": "parent updated end-of-control-step 0.8s clock, right offset0.5; Gaussian-smoothed stance [0,0.55),sigma0.015",
+      "activation": "finite max(abs(vx,vy,wz))>1e-6; disabled at zero; phase-gated, not an actual-contact gate"
+    }
+  },
+  "preserved": {
+    "asset": "retained ELF3 USD, approximately43.222507kg; no asset/PD/action-scale changes",
+    "actuator": "ImplicitActuator",
+    "armature": 0.01,
+    "joint_velocity_limit_rad_s": 20,
+    "physics_dt_s": 0.005,
+    "control_dt_s": 0.02,
+    "feedback": "existing joint_velocity_tustin_v1,20Hz observed dq; physical actuator PD unfiltered",
+    "actor": "100 proprioceptive values per frame,5 chronological frames,29 actions,deterministic mean context",
+    "empirical_normalization": false,
+    "standing": "original still-v2 exact-zero reward gates/default leg+waist pose and phase preprocessing preserved",
+    "upper_body_auxiliary": {
+      "mirror": 0.1,
+      "pose": 0.02
+    },
+    "terrain": "inherited17-level mixed terrain/course; initial levels inherited, not reset to a newly designed curriculum",
+    "commands": "inherited10-second resampling and20% standing",
+    "all_parent_rewards": true
+  },
+  "randomization": {
+    "kp_scale": [
+      0.8,
+      1.2
+    ],
+    "kd_scale": [
+      0.8,
+      1.2
+    ],
+    "gain_sampling": "startup,per environment/per joint,not resampled at each reset",
+    "contact_static_friction": [
+      0.6,
+      1
+    ],
+    "contact_dynamic_friction": [
+      0.4,
+      0.8
+    ],
+    "action_delay_enabled": false,
+    "joint_friction_randomization_added": false,
+    "note": "Contact friction,PD damping,armature,and motor friction are different parameters."
+  },
+  "training": {
+    "num_envs": 16384,
+    "seed": 42,
+    "num_steps_per_env": 24,
+    "num_mini_batches": 4,
+    "num_learning_epochs": 5,
+    "initial_learning_rate": 0.0001,
+    "learning_rate_schedule": "adaptive",
+    "min_learning_rate": 0.00001,
+    "max_learning_rate": 0.0003,
+    "save_interval": 500,
+    "total_target_updates": 100001,
+    "last_checkpoint_iteration": 100000,
+    "logger": "TensorBoard; optional independent SwanLab sidecar",
+    "automatic_training_restart": false,
+    "automatic_training_stop_monitor": false
+  },
+  "initialization_modes": {
+    "active_run": "From original still-v2 checkpoint18500, with its exact weights,Adam and saved learning rate; new rewards enabled starting18501. Parent remains read-only.",
+    "fresh": "Public entrypoint without --resume/--parent-checkpoint initializes random weights and empty Adam. Same final recipe does NOT reproduce the active continuation's training history.",
+    "parent_checkpoint": "--parent-checkpoint and explicit matching --parent-sha256 promote only a compatible original still-v2 checkpoint via initialize_from_parent; parent contract was originally made with16384 environments.",
+    "same_stage_resume": "--resume accepts only a full matching ankle_cost_v1 checkpoint with nonempty Adam. Existing completed iteration is excluded from additional updates; source is read-only and outputs go to a new directory.",
+    "state_not_restored": [
+      "simulator/physics state",
+      "terrain curriculum levels",
+      "RNG streams",
+      "observation histories",
+      "feedback filter histories"
+    ],
+    "historical_recovery_scripts": "scripts/resume_elf3_ankle_cost.py and resume_elf3_still_v2.py preserve the author's exact original-run recovery flow; they require its private local metadata and SwanLab ACK state, not just a checkpoint."
+  },
+  "commands": {
+    "setup": "bash scripts/setup_elf3_env.sh",
+    "configuration_check": "bash elf3.sh scripts/train_elf3_ankle_cost.py --verify-config-only --headless --device cuda:0 --num-envs 16384 --iterations 100001",
+    "smoke": "bash elf3.sh scripts/train_elf3_ankle_cost.py --headless --device cuda:0 --num-envs 64 --iterations 20 --run-name ankle_cost_smoke",
+    "fresh": "OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 bash elf3.sh scripts/train_elf3_ankle_cost.py --headless --device cuda:0 --num-envs 16384 --iterations 100001 --run-name ankle_cost_scratch_16384_seed42 --swanlab-project DWAQ",
+    "promote_parent": "bash elf3.sh scripts/train_elf3_ankle_cost.py --headless --device cuda:0 --num-envs 16384 --iterations 100001 --parent-checkpoint /path/to/original_still_v2/model_18500.pt --parent-sha256 <SHA256> --run-name ankle_cost_from18500 --swanlab-project DWAQ",
+    "resume": "bash elf3.sh scripts/train_elf3_ankle_cost.py --headless --device cuda:0 --num-envs 16384 --iterations 100001 --resume /path/to/ankle_cost_v1/model_N.pt --run-name ankle_cost_resume --swanlab-project DWAQ",
+    "export": "bash elf3.sh scripts/export_elf3_dwaq.py --checkpoint /path/to/model_N.pt --output exports/ankle_cost_model_N",
+    "tests": "CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 bash elf3.sh -m unittest discover -s tests -p 'test_ankle_cost*.py' -v",
+    "optional_visual_cache": "Only add --use-cached-visual for an existing verified arrow cache; ELF3_ARROW_CACHE can specify its path. This display-only alias does not change training physics.",
+    "swanlab": "Login with your own account using bash elf3.sh -m swanlab login. The public launcher creates a new run; it never reconnects the author's original run."
+  },
+  "validation_and_limits": {
+    "publication_validation_20261104": {
+      "targeted_cpu_tests": 94,
+      "test_groups": {"ankle_cost_including_public_launcher": 49, "original_still_v2_regressions": 45},
+      "public_fresh_smoke": "64 environments x2 updates, model_1.pt, successful exit; technical weights only",
+      "public_same_stage_resume_smoke": "64 environments, model_1.pt to model_2.pt, model/Adam/LR exactly restored, successful exit",
+      "public_parent_promotion_smoke": "64 environments, original still-v2 model_18500.pt to new-stage model_18501.pt, model/Adam/LR exactly restored, successful exit",
+      "saved_configuration_comparison": "Public fresh smoke vs active stage differed only in env.scene.num_envs, agent.max_iterations and agent.run_name; all rewards, physics, assets, commands, feedback, policy and PPO identical.",
+      "original_release_source_files_verified": 189,
+      "retained_asset_files_verified": 42,
+      "active_training_core_sha256_preserved": true,
+      "smoke_checkpoints_used_for_formal_training": false
+    },
+    "prior_reward_tests": "34 CPU reward/environment-hook/historical-launcher tests passed.",
+    "prior_stage_smoke": "64 environments x20 updates from parent18500 passed; smoke weights were not used to initialize formal training.",
+    "checkpoint_contract": "Includes new reward version/weights and exact3core source hashes,original still-v2 identity,asset contract,and observation/feedback/PPO recipe.",
+    "not_a_hardware_guarantee": "User reported no shaking with36000 ONNX on the same robot with deployment constants unchanged. Both new rewards changed together; this is not isolated proof for the ankle-torque term or all robots.",
+    "known_tradeoffs": "Existing flat simulation showed reduced ankle effort/high-frequency motion relative to18500, but increased walking support-knee flexion/load. Quiet touchdown and gait-posture fixes have not been implemented.",
+    "portability": "Same software/recipe/seed does not guarantee identical GPU/PhysX trajectories or learned outcomes on different hardware.",
+    "deployment": "Exported zero-command phase preprocessing remains embedded. No new delay/action filter or additional20Hz deployment filter is introduced.",
+    "data_policy": "No ELF3 checkpoints,ONNX files,private logs,real-robot traces or credentials are included in this source publication."
+  }
+}
