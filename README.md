@@ -21,16 +21,6 @@
 | `elf3_dwaq_feedback_v1` | 20 Hz 关节速度反馈基线 | `scripts/train_elf3_feedback.py` |
 | `elf3_dwaq_still_v2_ankle_cost_v1` | 零指令静止、默认腿腰姿态及踝部成本版本 | `scripts/train_elf3_ankle_cost.py` |
 
-两版共用 ELF3 资产、隐式 PD、`armature=0.01` 和 `500 → 29` 部署接口，不启用动作延迟。20 Hz 模型仅作用于训练中的关节速度观测，不对物理 PD 或输出动作滤波；Actor 采集、PPO 更新及部署使用一致的 CENet 均值 context，critic 使用最新帧脚接触力。
-
-踝部成本版另外包含：
-
-- 零指令时关闭周期接触／摆脚奖励，并固定 Actor 当前及历史相位；约束实际关节运动及腿腰默认姿态。
-- 四踝力矩平方成本 `−0.0005`，所有指令下生效。
-- 相位支撑期足速成本 `−1.0`，仅非零指令下生效；这是相位门控，不是真实接触门控。
-
-力矩成本使用仿真隐式执行器的估算力矩，不是真机实测力矩。配方与限制见 [反馈基线说明](docs/elf3_feedback_v1.json)和[踝部成本说明](docs/elf3_ankle_cost_v1.json)。
-
 查看任务入口：
 
 ```bash
