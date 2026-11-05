@@ -15,150 +15,28 @@
 # This file contains code derived from the RSL-RL, Isaac Lab, and Legged Lab Projects,
 # with additional modifications by the TienKung-Lab Project,
 # and is distributed under the BSD-3-Clause license.
+"""The two public ELF3 recipes; historical modules are private dependencies.
 
-from legged_lab.envs.base.base_env import BaseEnv
-from legged_lab.envs.base.base_env_config import BaseAgentCfg, BaseEnvCfg
-from legged_lab.envs.tienkung.run_cfg import TienKungRunAgentCfg, TienKungRunFlatEnvCfg
-from legged_lab.envs.tienkung.run_with_sensor_cfg import (
-    TienKungRunWithSensorAgentCfg,
-    TienKungRunWithSensorFlatEnvCfg,
-)
-from legged_lab.envs.tienkung.tienkung_env import TienKungEnv
-from legged_lab.envs.tienkung.walk_cfg import (
-    TienKungWalkAgentCfg,
-    TienKungWalkFlatEnvCfg,
-)
-from legged_lab.envs.tienkung.walk_with_sensor_cfg import (
-    TienKungWalkWithSensorAgentCfg,
-    TienKungWalkWithSensorFlatEnvCfg,
-)
-
-from legged_lab.envs.g1.g1_env import G1Env
-from legged_lab.envs.g1.g1_config import (
-    G1FlatAgentCfg,
-    G1FlatEnvCfg,
-    G1RoughAgentCfg,
-    G1RoughEnvCfg,
-)
-
-from legged_lab.envs.g1.g1_dwaq_env import G1DwaqEnv
-from legged_lab.envs.g1.g1_dwaq_config import (
-    G1DwaqAgentCfg,
-    G1DwaqEnvCfg,
-)
-
-from legged_lab.envs.h1.h1_config import (
-    H1FlatAgentCfg,
-    H1FlatEnvCfg,
-    H1RoughAgentCfg,
-    H1RoughEnvCfg,
-)
+Keep existing config factories and runner implementations byte-for-byte: their
+source fingerprints are part of completed checkpoint contracts. Registration
+does not rename experiment metadata, change rewards, or migrate old weights.
+"""
 from legged_lab.utils.task_registry import task_registry
-
-
-task_registry.register("walk", TienKungEnv, TienKungWalkFlatEnvCfg(), TienKungWalkAgentCfg())
-task_registry.register("run", TienKungEnv, TienKungRunFlatEnvCfg(), TienKungRunAgentCfg())
-task_registry.register(
-    "walk_with_sensor", TienKungEnv, TienKungWalkWithSensorFlatEnvCfg(), TienKungWalkWithSensorAgentCfg()
-)
-task_registry.register(
-    "run_with_sensor", TienKungEnv, TienKungRunWithSensorFlatEnvCfg(), TienKungRunWithSensorAgentCfg()
-)
-task_registry.register("h1_flat", BaseEnv, H1FlatEnvCfg(), H1FlatAgentCfg())
-task_registry.register("h1_rough", BaseEnv, H1RoughEnvCfg(), H1RoughAgentCfg())
-
-
-task_registry.register("g1_flat", BaseEnv, G1FlatEnvCfg(), G1FlatAgentCfg())
-task_registry.register("g1_rough", G1Env, G1RoughEnvCfg(), G1RoughAgentCfg())
-task_registry.register("g1_dwaq", G1DwaqEnv, G1DwaqEnvCfg(), G1DwaqAgentCfg())
-
 from legged_lab.envs.elf3.elf3_dwaq_env import Elf3DwaqEnv
-from legged_lab.envs.elf3.runner import Elf3DwaqOnPolicyRunner, Elf3DwaqUpperBodySymmetryRunner
-from legged_lab.envs.elf3.elf3_dwaq_config import (
-    Elf3DwaqAgentCfg, Elf3DwaqEnvCfg, Elf3DwaqFlatAgentCfg, Elf3DwaqFlatEnvCfg,
-    Elf3DwaqUpperBodySymmetryAgentCfg, Elf3DwaqUpperBodySymmetryPoseAgentCfg,
-)
-
-task_registry.register("elf3_dwaq", Elf3DwaqEnv, Elf3DwaqEnvCfg(), Elf3DwaqAgentCfg())
-task_registry.register("elf3_dwaq_flat", Elf3DwaqEnv, Elf3DwaqFlatEnvCfg(), Elf3DwaqFlatAgentCfg())
-task_registry.register(
-    "elf3_dwaq_upper_symmetry",
-    Elf3DwaqEnv,
-    Elf3DwaqEnvCfg(),
-    Elf3DwaqUpperBodySymmetryAgentCfg(),
-)
-task_registry.register(
-    "elf3_dwaq_upper_symmetry_pose",
-    Elf3DwaqEnv,
-    Elf3DwaqEnvCfg(),
-    Elf3DwaqUpperBodySymmetryPoseAgentCfg(),
-)
-
-# Opt-in experiments. Existing task instances and defaults are unchanged.
-from legged_lab.envs.elf3.elf3_feedback_config import (
-    Elf3DwaqFeedbackAgentCfg, Elf3DwaqFeedbackEnvCfg,
-    Elf3DwaqConsistentAgentCfg, Elf3DwaqConsistentEnvCfg,
-)
+from legged_lab.envs.elf3.elf3_feedback_config import Elf3DwaqFeedbackEnvCfg, Elf3DwaqFeedbackAgentCfg
 from legged_lab.envs.elf3.elf3_feedback_env import Elf3DwaqFeedbackEnv
 from legged_lab.envs.elf3.feedback_runner import Elf3DwaqFeedbackRunner
+from legged_lab.envs.elf3.ankle_cost import (
+    Elf3DwaqAnkleCostEnv, Elf3DwaqAnkleCostRunner, make_configs as _ankle_configs,
+)
 
 task_registry.register("elf3_dwaq_feedback_v1", Elf3DwaqFeedbackEnv,
                        Elf3DwaqFeedbackEnvCfg(), Elf3DwaqFeedbackAgentCfg())
-task_registry.register("elf3_dwaq_consistent_v1", Elf3DwaqFeedbackEnv,
-                       Elf3DwaqConsistentEnvCfg(), Elf3DwaqConsistentAgentCfg())
+_ankle_env, _ankle_agent = _ankle_configs()
+task_registry.register("elf3_dwaq_still_v2_ankle_cost_v1", Elf3DwaqAnkleCostEnv,
+                       _ankle_env, _ankle_agent)
 
-# Walking is unchanged; only the strict zero-command gait rewards are gated.
-from legged_lab.envs.elf3.elf3_stand_config import Elf3DwaqStandAgentCfg, Elf3DwaqStandEnvCfg
-from legged_lab.envs.elf3.standing_runner import Elf3DwaqStandRunner
-
-task_registry.register("elf3_dwaq_stand_v1", Elf3DwaqFeedbackEnv,
-                       Elf3DwaqStandEnvCfg(), Elf3DwaqStandAgentCfg())
-
-from legged_lab.envs.elf3.elf3_stand_v2_config import Elf3DwaqStandV2AgentCfg, Elf3DwaqStandV2EnvCfg
-from legged_lab.envs.elf3.quiet_env import Elf3DwaqStandV2Env
-from legged_lab.envs.elf3.quiet_runner import Elf3DwaqStandV2Runner
-
-task_registry.register("elf3_dwaq_stand_v2", Elf3DwaqStandV2Env,
-                       Elf3DwaqStandV2EnvCfg(), Elf3DwaqStandV2AgentCfg())
-
-# Minimal original-PPO standing behavior; prior experiments remain available.
-from legged_lab.envs.elf3.elf3_still_config import Elf3DwaqStillAgentCfg, Elf3DwaqStillEnvCfg
-from legged_lab.envs.elf3.still_env import Elf3DwaqStillEnv
-from legged_lab.envs.elf3.still_runner import Elf3DwaqStillRunner
-
-task_registry.register("elf3_dwaq_still", Elf3DwaqStillEnv,
-                       Elf3DwaqStillEnvCfg(), Elf3DwaqStillAgentCfg())
-
-# Isolated continuation: original still behavior plus zero-command leg pose.
-from legged_lab.envs.elf3.elf3_still_pose_config import Elf3DwaqStillPoseAgentCfg, Elf3DwaqStillPoseEnvCfg
-from legged_lab.envs.elf3.still_pose_runner import Elf3DwaqStillPoseRunner
-
-task_registry.register("elf3_dwaq_still_pose_v1", Elf3DwaqStillEnv,
-                       Elf3DwaqStillPoseEnvCfg(), Elf3DwaqStillPoseAgentCfg())
-
-# Still/102500 recipe retained; only zero-command leg/waist pose is stronger.
-from legged_lab.envs.elf3.elf3_still_v2_config import Elf3DwaqStillV2AgentCfg, Elf3DwaqStillV2EnvCfg
-from legged_lab.envs.elf3.still_v2_runner import Elf3DwaqStillV2Runner
-
-task_registry.register("elf3_dwaq_still_v2", Elf3DwaqStillEnv,
-                       Elf3DwaqStillV2EnvCfg(), Elf3DwaqStillV2AgentCfg())
-
-# Recommended ELF3 feedback task, with an integrated replacement zero objective.
-from legged_lab.envs.elf3.elf3_feedback_still_v2_config import (
-    Elf3DwaqFeedbackStillV2AgentCfg, Elf3DwaqFeedbackStillV2EnvCfg,
-)
-from legged_lab.envs.elf3.feedback_still_v2_env import Elf3DwaqFeedbackStillV2Env
-from legged_lab.envs.elf3.feedback_still_v2_runner import Elf3DwaqFeedbackStillV2Runner
-
-task_registry.register("elf3_dwaq_feedback_still_v2", Elf3DwaqFeedbackStillV2Env,
-                       Elf3DwaqFeedbackStillV2EnvCfg(), Elf3DwaqFeedbackStillV2AgentCfg())
-
-# Replacement zero-command objective; prior run identities remain immutable.
-from legged_lab.envs.elf3.elf3_feedback_stand_v3_config import (
-    Elf3DwaqFeedbackStandV3AgentCfg, Elf3DwaqFeedbackStandV3EnvCfg,
-)
-from legged_lab.envs.elf3.feedback_stand_v3_env import Elf3DwaqFeedbackStandV3Env
-from legged_lab.envs.elf3.feedback_stand_v3_runner import Elf3DwaqFeedbackStandV3Runner
-
-task_registry.register("elf3_dwaq_feedback_stand_v3", Elf3DwaqFeedbackStandV3Env,
-                       Elf3DwaqFeedbackStandV3EnvCfg(), Elf3DwaqFeedbackStandV3AgentCfg())
+__all__ = [
+    "Elf3DwaqEnv", "Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackRunner",
+    "Elf3DwaqAnkleCostEnv", "Elf3DwaqAnkleCostRunner",
+]

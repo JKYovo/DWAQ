@@ -318,14 +318,16 @@ class StillV2IntegrationTests(unittest.TestCase):
         self.assertTrue(torch.equal(data.default_joint_pos, before_home))
         self.assertTrue(torch.equal(data.joint_vel, before_dq))
 
-    def test_registration_reuses_original_still_environment_not_v3_phase_path(self):
+    def test_original_still_v2_is_private_and_ankle_env_keeps_original_still_path(self):
         tree = ast.parse((ROOT / "TienKung-Lab/legged_lab/envs/__init__.py").read_text())
         matches = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
                    and isinstance(node.func, ast.Attribute) and node.func.attr == "register"
                    and node.args and isinstance(node.args[0], ast.Constant) and node.args[0].value == "elf3_dwaq_still_v2"]
-        self.assertEqual(len(matches), 1)
-        self.assertEqual([ast.unparse(arg) for arg in matches[0].args[1:]],
-                         ["Elf3DwaqStillEnv", "Elf3DwaqStillV2EnvCfg()", "Elf3DwaqStillV2AgentCfg()"])
+        self.assertEqual(matches, [])
+        ankle = ast.parse((ROOT / "TienKung-Lab/legged_lab/envs/elf3/ankle_cost.py").read_text())
+        env = next(node for node in ankle.body if isinstance(node, ast.ClassDef)
+                   and node.name == "Elf3DwaqAnkleCostEnv")
+        self.assertEqual([ast.unparse(base) for base in env.bases], ["Elf3DwaqStillEnv"])
 
 
 if __name__ == "__main__":

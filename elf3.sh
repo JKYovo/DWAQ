@@ -12,6 +12,9 @@ if [[ ! -x "$ELF3_PYTHON" ]]; then
     exit 1
 fi
 
+# Only public command dispatch changes; imported checkpoint helpers are untouched.
+"$ELF3_PYTHON" "$ELF3_PROJECT_DIR/scripts/elf3_task_catalog.py" --check-entrypoint "$@"
+
 if [[ -n "$ELF3_ISAAC_SIM_DIR" ]]; then
     if [[ ! -f "$ELF3_ISAAC_SIM_DIR/setup_conda_env.sh" ]]; then
         echo "Invalid ELF3_ISAAC_SIM_DIR: $ELF3_ISAAC_SIM_DIR" >&2

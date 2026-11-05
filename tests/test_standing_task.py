@@ -406,16 +406,13 @@ class StandingConfigurationTests(unittest.TestCase):
             self.assertEqual(agent[key], value); agent[key] = original[key]
         self.assertEqual(agent, original)
 
-    def test_task_registration_uses_feedback_environment_and_own_agent(self):
+    def test_historical_stand_v1_is_no_longer_publicly_registered(self):
         tree = ast.parse((LAB / "envs/__init__.py").read_text())
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
                  and isinstance(node.func, ast.Attribute) and node.func.attr == "register"
                  and node.args and isinstance(node.args[0], ast.Constant)
                  and node.args[0].value == "elf3_dwaq_stand_v1"]
-        self.assertEqual(len(calls), 1)
-        self.assertEqual(ast.unparse(calls[0].args[1]), "Elf3DwaqFeedbackEnv")
-        self.assertEqual(ast.unparse(calls[0].args[2]), "Elf3DwaqStandEnvCfg()")
-        self.assertEqual(ast.unparse(calls[0].args[3]), "Elf3DwaqStandAgentCfg()")
+        self.assertEqual(calls, [])
 
 
 if __name__ == "__main__":

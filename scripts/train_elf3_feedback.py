@@ -13,12 +13,12 @@ from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ("elf3_dwaq_consistent_v1", "elf3_dwaq_feedback_v1")
+TASKS = ("elf3_dwaq_feedback_v1",)
 
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--task", choices=TASKS, default=TASKS[1])
+    parser.add_argument("--task", choices=TASKS, default=TASKS[0])
     # The launcher is safe to try without accidentally starting a long run.
     parser.add_argument("--num-envs", type=int, default=64)
     parser.add_argument("--iterations", type=int, default=20,
@@ -115,7 +115,11 @@ def main():
         agent.seed, agent.device = args.seed, args.device
         agent.max_iterations, agent.save_interval = args.iterations, 500
         agent.run_name, agent.logger, agent.resume = args.run_name, "tensorboard", False
-        baseline_env, baseline_agent = task_registry.get_cfgs("elf3_dwaq_upper_symmetry_pose")
+        # Historical baseline remains an internal validator, not a public task.
+        from legged_lab.envs.elf3.elf3_dwaq_config import (
+            Elf3DwaqEnvCfg, Elf3DwaqUpperBodySymmetryPoseAgentCfg,
+        )
+        baseline_env, baseline_agent = Elf3DwaqEnvCfg(), Elf3DwaqUpperBodySymmetryPoseAgentCfg()
         audit = validate_effective_config(cfg, agent, baseline_env, baseline_agent)
         if args.verify_config_only:
             print(json.dumps({"configuration": audit, "source_integrity": integrity,

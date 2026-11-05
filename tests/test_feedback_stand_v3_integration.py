@@ -498,16 +498,13 @@ class FeedbackStandV3IntegrationTests(unittest.TestCase):
             self.assertEqual(reader.lowlevel_load_count, 1)
             self.assertEqual(reader.current_learning_iteration, 500)
 
-    def test_existing_registration_keeps_same_task_name_and_minimal_private_classes(self):
+    def test_historical_v3_is_no_longer_publicly_registered(self):
         tree = ast.parse((ROOT / "TienKung-Lab/legged_lab/envs/__init__.py").read_text())
         matches = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
                    and isinstance(node.func, ast.Attribute) and node.func.attr == "register"
                    and node.args and isinstance(node.args[0], ast.Constant)
                    and node.args[0].value == "elf3_dwaq_feedback_stand_v3"]
-        self.assertEqual(len(matches), 1)
-        self.assertEqual([ast.unparse(arg) for arg in matches[0].args[1:]],
-                         ["Elf3DwaqFeedbackStandV3Env", "Elf3DwaqFeedbackStandV3EnvCfg()",
-                          "Elf3DwaqFeedbackStandV3AgentCfg()"])
+        self.assertEqual(matches, [])
 
 
 if __name__ == "__main__":

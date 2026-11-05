@@ -177,7 +177,7 @@ class QuietConfigurationIntegrationTests(unittest.TestCase):
         baseline["algorithm"].pop("class_name", None)
         self.assertEqual(changed, baseline)
 
-    def test_v2_and_v1_have_distinct_task_environment_and_runner_registration(self):
+    def test_historical_standing_tasks_are_retired_but_feedback_is_preserved(self):
         tree = ast.parse((LAB / "envs/__init__.py").read_text())
         registrations = {}
         for node in ast.walk(tree):
@@ -185,10 +185,8 @@ class QuietConfigurationIntegrationTests(unittest.TestCase):
                     and node.func.attr == "register" and node.args
                     and isinstance(node.args[0], ast.Constant)):
                 registrations[node.args[0].value] = [ast.unparse(arg) for arg in node.args[1:]]
-        self.assertEqual(registrations["elf3_dwaq_stand_v2"],
-                         ["Elf3DwaqStandV2Env", "Elf3DwaqStandV2EnvCfg()", "Elf3DwaqStandV2AgentCfg()"])
-        self.assertEqual(registrations["elf3_dwaq_stand_v1"],
-                         ["Elf3DwaqFeedbackEnv", "Elf3DwaqStandEnvCfg()", "Elf3DwaqStandAgentCfg()"])
+        self.assertNotIn("elf3_dwaq_stand_v2", registrations)
+        self.assertNotIn("elf3_dwaq_stand_v1", registrations)
         self.assertEqual(registrations["elf3_dwaq_feedback_v1"],
                          ["Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackEnvCfg()", "Elf3DwaqFeedbackAgentCfg()"])
 

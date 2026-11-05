@@ -367,7 +367,9 @@ class LauncherAndConfigIntegrationTests(unittest.TestCase):
         args = parser.parse_args([])
         self.assertEqual((args.num_envs, args.iterations, args.seed), (64, 20, 42))
         self.assertIsNone(args.resume)
-        self.assertEqual(tuple(launcher.TASKS), tuple(contract.TASKS))
+        # Historical identities remain readable, but only feedback is public.
+        self.assertEqual(tuple(launcher.TASKS), ("elf3_dwaq_feedback_v1",))
+        self.assertTrue(set(launcher.TASKS).issubset(contract.TASKS))
         self.assertTrue(parser.parse_args(["--verify-config-only"]).verify_config_only)
 
     def test_config_ast_only_extends_existing_upper_body_task_and_changes_context(self):
@@ -401,10 +403,8 @@ class LauncherAndConfigIntegrationTests(unittest.TestCase):
                     registered[node.args[0].value] = [ast.unparse(value) for value in node.args[1:]]
         self.assertEqual(registered["elf3_dwaq_feedback_v1"],
                          ["Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackEnvCfg()", "Elf3DwaqFeedbackAgentCfg()"])
-        self.assertEqual(registered["elf3_dwaq_consistent_v1"],
-                         ["Elf3DwaqFeedbackEnv", "Elf3DwaqConsistentEnvCfg()", "Elf3DwaqConsistentAgentCfg()"])
-        self.assertEqual(registered["elf3_dwaq_upper_symmetry_pose"],
-                         ["Elf3DwaqEnv", "Elf3DwaqEnvCfg()", "Elf3DwaqUpperBodySymmetryPoseAgentCfg()"])
+        self.assertEqual(set(registered), {"elf3_dwaq_feedback_v1",
+                                          "elf3_dwaq_still_v2_ankle_cost_v1"})
 
 
 if __name__ == "__main__":

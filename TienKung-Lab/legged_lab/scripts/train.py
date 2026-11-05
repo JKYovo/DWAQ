@@ -97,7 +97,8 @@ def train():
 
     env = env_class(env_cfg, args_cli.headless)
 
-    log_root_path = os.path.join("logs", agent_cfg.experiment_name)
+    # Factories keep legacy experiment_name for strict checkpoint compatibility.
+    log_root_path = os.path.join("logs", args_cli.task)
     log_root_path = os.path.abspath(log_root_path)
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
 

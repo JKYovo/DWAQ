@@ -7,7 +7,14 @@
 
 本项目将 DWAQ（DreamWaQ 风格的历史观测编码器 + PPO）适配到 **ELF3 29 自由度人形机器人**，用于无视觉地形适应、盲走和楼梯训练。训练框架基于 Isaac Lab、TienKung-Lab、Legged Lab 与 RSL-RL。
 
-公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前训练为下述 `still_v2 + ankle_cost_v1` 实验；`elf3_dwaq_feedback_v1` 和原 `2362a3a` 的 0918 训练任务与资产配置仍保留。当前实验不启用动作延迟。历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
+公开的 10 万轮稳定基线标签为 [`elf3-dwaq-stable-100k`](https://github.com/JKYovo/DWAQ/tree/elf3-dwaq-stable-100k)。当前公开保留以下两个训练任务。旧配置模块仅作为继承、校验及历史模型导出的内部依赖，不再作为公开训练任务；已有权重和日志不删除。当前两版不启用动作延迟。历史延迟实验见 [docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md](docs/ELF3_DWAQ_GITHUB_IMPROVED_20260922.md)。训练权重不提交到 Git 仓库。
+
+| 任务 | 定位 | 专用训练入口 |
+| --- | --- | --- |
+| `elf3_dwaq_feedback_v1` | 20 Hz 速度反馈基线 | `scripts/train_elf3_feedback.py` |
+| `elf3_dwaq_still_v2_ankle_cost_v1` | 已发布的 still-v2 踝部成本基线；38500 续训点所属版本 | `scripts/train_elf3_ankle_cost.py` |
+
+运行 `./elf3.sh scripts/elf3_task_catalog.py` 查看入口。`elf3.sh` 会在启动 Isaac 前拒绝旧任务命令；不修改现有训练进程或任何奖励／资产／PPO 参数。
 
 ## 功能
 
@@ -22,9 +29,9 @@
 
 > DWAQ 本身不包含 AMP。本项目的 ELF3 DWAQ 训练也不加载 AMP 动作数据或 AMP 权重。
 
-## 当前 still-v2 踝部实验
+## still-v2 踝部成本基线
 
-在 `elf3_dwaq_still_v2` 的零指令静止／腿腰默认姿态目标上，仅增加四踝力矩平方成本 **−0.0005** 和相位支撑期足速成本 **−1.0**。完整复用当前资产、隐式 PD、`armature=0.01`、20 Hz 关节速度观测模型、CENet/PPO 与 `500 → 29` 接口；不包含尚未实施的轻落地、膝力矩、高度或动作延迟改动。
+在内部 `elf3_dwaq_still_v2` 配置的零指令静止／腿腰默认姿态目标上，仅增加四踝力矩平方成本 **−0.0005** 和相位支撑期足速成本 **−1.0**。完整复用当前资产、隐式 PD、`armature=0.01`、20 Hz 关节速度观测模型、CENet/PPO 与 `500 → 29` 接口；本基线不包含轻落地、膝力矩、高度或动作延迟改动。
 
 公开入口不依赖作者的旧日志或 SwanLab run；下面命令**从零使用当前最终奖励配置**：
 
@@ -37,7 +44,7 @@
 
 固定 seed 42，每 500 轮保存；默认 TensorBoard，可选 SwanLab 使用自己的登录账号和新 run。日志写入 `logs/elf3_dwaq_still_v2_ankle_cost_v1/`。`--iterations` 是总目标更新数，`100001` 对应 `model_100000.pt`。
 
-本机当前实验实际上从原 still-v2 的 `model_18500.pt` 恢复权重、Adam 和学习率；从零命令不能复现这一段已有训练历史。有兼容父权重时使用 `--parent-checkpoint` 和 `--parent-sha256`；同奖励版本续训使用 `--resume`，都保持严格契约检查并写新目录。完整公式、命令、限制见 [实验配置](docs/elf3_ankle_cost_v1.json)。`resume_elf3_ankle_cost.py` / `resume_elf3_still_v2.py` 仅归档原实验的原日志／原 SwanLab 恢复流程，不是其他机器的默认入口。
+本机该基线实验实际上从原 still-v2 的 `model_18500.pt` 恢复权重、Adam 和学习率；从零命令不能复现这一段已有训练历史。有兼容父权重时使用 `--parent-checkpoint` 和 `--parent-sha256`；同奖励版本续训使用 `--resume`，都保持严格契约检查并写新目录。完整公式、命令、限制见 [实验配置](docs/elf3_ankle_cost_v1.json)。旧 `resume_elf3_ankle_cost.py` / `resume_elf3_still_v2.py` 只保留内部兼容实现，不再是公开启动入口。
 
 ## 反馈训练基线
 
@@ -53,9 +60,7 @@
 
 日志位于 `logs/elf3_dwaq_feedback_v1/`，每 500 轮保存。默认从零训练；只接受本实验同配置 checkpoint 的显式 `--resume PATH/model_N.pt`，`--iterations` 表示包含已有轮次的总目标更新数，`100001` 对应最终 `model_100000.pt`。SwanLab 使用独立进程补传，使用前需完成登录；技术中断不会自动重启训练。
 
-48500 轮模型已有用户同整机、同部署仅替换模型后不再观察到行走抖动的反馈，但三项改动的单独贡献与更多工况尚未验证。部署使用现有硬件报告速度，**不要再叠加该训练低通模型**。参数、导出和限制见 [反馈实验说明](docs/elf3_feedback_v1.json)；`elf3_dwaq_consistent_v1` 保留相同一致性修正但使用理想速度观测，仅作未训练的对照任务。
-
-以下训练和 Play 示例保留为原 0918 基线的用法；反馈实验导出仍使用 `scripts/export_elf3_dwaq.py`。其严格训练合约暂不支持通用 Play 修改环境数或地形后加载，可导出后做 Sim2Sim。
+48500 轮模型已有用户同整机、同部署仅替换模型后不再观察到行走抖动的反馈，但三项改动的单独贡献与更多工况尚未验证。部署使用现有硬件报告速度，**不要再叠加该训练低通模型**。参数、导出和限制见 [反馈实验说明](docs/elf3_feedback_v1.json)。历史 `consistent_v1` 消融日志／模型保留，但不再开放该训练任务。
 
 ## 环境
 
@@ -101,24 +106,27 @@ bash scripts/setup_elf3_env.sh
 ```bash
 ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 ```
-### 续训
+
+## 同任务续训
+
+反馈基线及踝部成本基线优先使用各自专用入口的 `--resume PATH/model_N.pt`。通用入口也只注册上表两个任务，续训例：
 
 ```bash
 ./elf3.sh TienKung-Lab/legged_lab/scripts/train.py \
-  --task=elf3_dwaq_upper_symmetry_pose \
+  --task=elf3_dwaq_still_v2_ankle_cost_v1 \
   --headless \
-  --num_envs=4096 \
+  --num_envs=16384 \
   --seed=42 \
   --resume=True \
   --load_run=<运行目录名> \
-  --checkpoint=model_100000.pt \
+  --checkpoint=model_38500.pt \
   --max_iterations=10001 \
-  --run_name=resume_from_100000 \
+  --run_name=ankle_cost_v1_resume \
   --logger=tensorboard \
   --swanlab_project=DWAQ
 ```
 
-续训恢复策略、优化器和迭代编号；仅支持资产契约匹配的 checkpoint，不能直接使用旧资产版本权重。通用 `train.py` 的保存间隔沿用任务默认值（100 轮），`max_iterations` 表示本次追加的更新次数。
+续训恢复策略、优化器和迭代编号；必须与该模型的完整任务／环境／Agent 契约一致，不能混用其他版本权重。通用 `train.py` 的保存间隔为保留任务的默认值（500 轮），`max_iterations` 表示本次追加的更新次数；日志按公开任务名分目录，不改变内部历史配置身份。
 并行环境的 terrain level 不保存在 checkpoint 中，新进程会从配置的初始等级重新建立课程。
 
 ## 地形课程
@@ -139,7 +147,7 @@ ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 
 ```bash
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose \
+  --task=elf3_dwaq_feedback_v1 \
   --num_envs=20 \
   --load_run=<运行目录名> \
   --checkpoint=model_100000.pt \
@@ -155,16 +163,16 @@ ELF3_ISAAC_SIM_DIR=/path/to/isaacsim ./elf3.sh <python-script> [args...]
 ```bash
 # 平地
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose --terrain=flat \
+  --task=elf3_dwaq_feedback_v1 --terrain=flat \
   --load_run=<运行目录名> --checkpoint=model_100000.pt
 
 # 纯台阶
 ./elf3.sh TienKung-Lab/legged_lab/scripts/play.py \
-  --task=elf3_dwaq_upper_symmetry_pose --terrain=stairs --difficulty=1.0 \
+  --task=elf3_dwaq_feedback_v1 --terrain=stairs --difficulty=1.0 \
   --load_run=<运行目录名> --checkpoint=model_100000.pt
 ```
 
-Play 会关闭观测噪声与周期推力，并固定前进命令为 `1.0 m/s`。
+以上为 feedback_v1 的 Play 示例，关闭观测噪声与周期推力，默认前进命令 `1.0 m/s`。踝部成本版的专用 runner 含完整配置检查；不承诺修改地形后的通用 Play 已兼容，可先导出后做 Sim2Sim。
 
 ## 策略接口
 
@@ -188,7 +196,7 @@ DWAQ 历史输入为 5 帧，共 500 维，顺序为旧帧到新帧。Actor 输�
 
 ```bash
 ./elf3.sh scripts/export_elf3_dwaq.py \
-  --checkpoint logs/elf3_dwaq_upper_symmetry_pose/<运行目录>/model_100000.pt \
+  --checkpoint logs/elf3_dwaq_feedback_v1/<运行目录>/model_100000.pt \
   --output artifacts/elf3_dwaq_model_100000
 ```
 
@@ -233,8 +241,9 @@ output: actions [batch, 29]
 ├── requirements-elf3.txt                # ELF3 环境依赖
 ├── scripts/
 │   ├── setup_elf3_env.sh                # 环境安装
-│   ├── train_elf3_feedback.py           # 当前反馈实验训练入口
-│   ├── train_0918_melody.py             # 保留的 0918 基线入口
+│   ├── elf3_task_catalog.py            # 仅两个公开任务及旧入口检查
+│   ├── train_elf3_feedback.py           # 速度反馈基线
+│   ├── train_elf3_ankle_cost.py         # still-v2 踝部成本基线
 │   ├── export_elf3_dwaq.py              # 确定性导出
 │   ├── sim2sim_elf3_dwaq.py             # MuJoCo 回放
 │   └── check_elf3.py                    # 资产/接口/训练检查

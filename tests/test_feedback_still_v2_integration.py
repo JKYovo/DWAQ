@@ -219,16 +219,13 @@ class FeedbackStillV2IntegrationTests(unittest.TestCase):
         self.assertTrue((env.raw_observations[:, 96:100] == .3).all())
         self.assertTrue((env.raw_history.reshape(2, 5, 100)[:, :, 96:100] == .4).all())
 
-    def test_new_registration_is_independent(self):
+    def test_historical_feedback_still_v2_is_no_longer_publicly_registered(self):
         tree = ast.parse((ROOT / "TienKung-Lab/legged_lab/envs/__init__.py").read_text())
         matches = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
                    and isinstance(node.func, ast.Attribute) and node.func.attr == "register"
                    and node.args and isinstance(node.args[0], ast.Constant)
                    and node.args[0].value == "elf3_dwaq_feedback_still_v2"]
-        self.assertEqual(len(matches), 1)
-        self.assertEqual([ast.unparse(arg) for arg in matches[0].args[1:]],
-                         ["Elf3DwaqFeedbackStillV2Env", "Elf3DwaqFeedbackStillV2EnvCfg()",
-                          "Elf3DwaqFeedbackStillV2AgentCfg()"])
+        self.assertEqual(matches, [])
 
 
 if __name__ == "__main__":

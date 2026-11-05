@@ -185,7 +185,7 @@ class MinimalStillConfigurationTests(unittest.TestCase):
         self.assertEqual(changed["algorithm"]["max_learning_rate"], 3e-4)
         self.assertEqual(changed["policy"]["context_mode"], "mean")
 
-    def test_new_registration_does_not_replace_feedback_or_existing_stand_tasks(self):
+    def test_feedback_stays_public_but_legacy_standing_registrations_are_retired(self):
         tree = ast.parse((LAB / "envs/__init__.py").read_text())
         found = {}
         counts = {}
@@ -197,14 +197,13 @@ class MinimalStillConfigurationTests(unittest.TestCase):
                 counts[name] = counts.get(name, 0) + 1
                 found[name] = [ast.unparse(arg) for arg in call.args[1:]]
         expected = {
-            "elf3_dwaq_still": ["Elf3DwaqStillEnv", "Elf3DwaqStillEnvCfg()", "Elf3DwaqStillAgentCfg()"],
             "elf3_dwaq_feedback_v1": ["Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackEnvCfg()", "Elf3DwaqFeedbackAgentCfg()"],
-            "elf3_dwaq_stand_v1": ["Elf3DwaqFeedbackEnv", "Elf3DwaqStandEnvCfg()", "Elf3DwaqStandAgentCfg()"],
-            "elf3_dwaq_stand_v2": ["Elf3DwaqStandV2Env", "Elf3DwaqStandV2EnvCfg()", "Elf3DwaqStandV2AgentCfg()"],
         }
         for name, arguments in expected.items():
             self.assertEqual(counts[name], 1)
             self.assertEqual(found[name], arguments)
+        for name in ("elf3_dwaq_still", "elf3_dwaq_stand_v1", "elf3_dwaq_stand_v2"):
+            self.assertNotIn(name, found)
 
 
 class MinimalStillRunnerTests(unittest.TestCase):
