@@ -228,7 +228,6 @@ docs/                            # 配方、资产来源及历史记录
 
 - [G1DWAQ_Lab](https://github.com/liuyufei-nubot/G1DWAQ_Lab)
 - [TienKung-Lab](https://github.com/Open-X-Humanoid/TienKung-Lab)
-- [MelodyAI/TienKung-Lab](https://github.com/MelodyAI/TienKung-Lab)（ELF3 执行器配置参考）
 - [Legged Lab](https://github.com/Hellod035/LeggedLab)
 - [DreamWaQ / Manaro-Alpha](https://github.com/Manaro-Alpha/DreamWaQ)
 - [Isaac Lab](https://github.com/isaac-sim/IsaacLab)
