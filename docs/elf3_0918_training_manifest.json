@@ -135,7 +135,9 @@
       "scripts/train_elf3_reward_curriculum.py": "9db7f90b57974c022666c585832fb813950d7e7c331ab8c6e14c7659931fe4e8",
       "docs/elf3_reward_curriculum_v1.md": "51600ac9e36f6fd0e2518a6b1a4e0e9134e4b77334192c8ff31c524e8718bfb9",
       "tests/test_reward_curriculum.py": "320d2442dcb822012b2f1056e6f46170e1d99cdb384d0a670904e2a1cc0596ef",
-      "README.md": "d15f6fe3a2b59111b273efa251458b0a23f1086a20de93f2a45ec0f183eb1777"
+      "README.md": "3eced19d0e7fbc9a74beecfaec47bb4ad8137f407e8a92947e3b50b4dfc665c3",
+      "docs/releases/elf3_force500_79000_v1.md": "ea2c8abf53f88a9647dc6bdaa7d5a1276ccdc2fba135397f8e7eff3b2171b63f",
+      "docs/releases/elf3_force500_79000.sha256": "4398845fb90c8bf10cf29acd361132573b895d2a3004157827ebbde651425dc2"
     }
   },
   "baseline_training_files": {

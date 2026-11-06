@@ -106,6 +106,8 @@ bash scripts/setup_elf3_env.sh
 
 ### 同任务续训
 
+**79000轮预训练权重**通过[GitHub Release](https://github.com/JKYovo/DWAQ/releases/tag/elf3-force500-79000-v1)单独提供。需要resume／同配方微调时，使用该权重和固定500 N任务`elf3_dwaq_still_v2_force500_v1`，**不要用课程任务resume**；下载、SHA256及完整命令见[79000权重说明](docs/releases/elf3_force500_79000_v1.md)。
+
 下面以踝部成本版为例，将路径替换为该任务的实际检查点：
 
 ```bash
