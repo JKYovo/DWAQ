@@ -22,6 +22,7 @@
 | `elf3_dwaq_still_v2` | 恢复的原始零指令静止／腿腰姿态任务 | `scripts/train_elf3_still_v2_restored.py` |
 | `elf3_dwaq_still_v2_ankle_cost_v1` | 零指令静止、默认腿腰姿态及踝部成本版本 | `scripts/train_elf3_ankle_cost.py` |
 | `elf3_dwaq_still_v2_force500_v1` | 当前500 N足力峰值、动作平滑及运动高度版本，可从零训练 | `scripts/train_elf3_force500.py` |
+| `elf3_dwaq_still_v2_curriculum_v1` | 先学still_v2，随后线性开启踝部、运动高度及平滑约束 | `scripts/train_elf3_reward_curriculum.py` |
 
 查看任务入口：
 
@@ -29,7 +30,7 @@
 ./elf3.sh scripts/elf3_task_catalog.py
 ```
 
-以上四个任务公开注册。其他配置和脚本保留为继承、严格校验及历史模型导出的内部依赖，不再作为公开训练入口。
+以上五个任务公开注册。其他配置和脚本保留为继承、严格校验及历史模型导出的内部依赖，不再作为公开训练入口。
 
 ## 环境与安装
 
@@ -57,7 +58,19 @@ bash scripts/setup_elf3_env.sh
 
 ### 从零训练
 
-当前500 N版（独立从零，不要求历史权重或本机日志）：
+奖励课程版（独立从零，不要求历史权重或本机日志）：
+
+```bash
+./elf3.sh scripts/train_elf3_reward_curriculum.py \
+  --headless --device cuda:0 --num-envs 16384 --iterations 50001 --seed 42 \
+  --ramp-start 20000 --ramp-end 30000 \
+  --run-name curriculum_scratch_16384_seed42 \
+  --swanlab-project DWAQ
+```
+
+先用still_v2目标训练到20000轮，随后10000轮线性开启后续质量约束，30000轮后保持最终配方，结束于`model_50000.pt`。课程全阶段均使用500 N足力阈值和控制周期峰值采样；资产、PD、20 Hz反馈、命令采样及PPO不变。课程进度写入检查点，续训必须匹配原时间表；原始still_v2父模型显式迁移及提前开启二阶段的方法见[课程说明](docs/elf3_reward_curriculum_v1.md)。该新课程不保证复现历史多阶段训练效果。
+
+固定最终奖励500 N版（对照配方，独立从零）：
 
 ```bash
 ./elf3.sh scripts/train_elf3_force500.py \
@@ -115,6 +128,7 @@ bash scripts/setup_elf3_env.sh
 logs/elf3_dwaq_feedback_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_ankle_cost_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_force500_v1/<时间戳>_<run_name>/
+logs/elf3_dwaq_still_v2_curriculum_v1/<时间戳>_<run_name>/
 ```
 
 TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登录自己的账号：
@@ -150,7 +164,7 @@ TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登
 
 `--command VX VY WZ` 固定机体坐标系速度指令；不指定时默认前进 `1.0 m/s`。Play 关闭观测噪声及周期推力。`rough --difficulty 1.0` 对应训练 Level 16，楼梯最高 30 cm；独立 `stairs` 测试地形的台阶为 20～25 cm，不等于该训练等级。
 
-以上原生 Play 示例仅针对反馈基线。踝部成本版及500 N版 runner 有额外的完整配置校验，尚未确认兼容修改地形／环境数的通用 Play；请优先导出后使用下述 MuJoCo 回放。
+以上原生 Play 示例仅针对反馈基线。踝部成本版、500 N版及课程版 runner 有额外的完整配置校验，尚未确认兼容修改地形／环境数的通用 Play；请优先导出后使用下述 MuJoCo 回放。
 
 ### 导出 ONNX／TorchScript
 
@@ -220,7 +234,8 @@ TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登
 elf3.sh                          # 项目环境启动入口
 scripts/
   setup_elf3_env.sh               # 安装
-  elf3_task_catalog.py            # 四个公开任务
+  elf3_task_catalog.py            # 五个公开任务
+  train_elf3_reward_curriculum.py # still_v2→最终500 N奖励课程
   train_elf3_force500.py          # 当前500 N配方，从零／同配方续训
   train_elf3_feedback.py          # 反馈基线
   train_elf3_ankle_cost.py        # 静止／踝部成本版

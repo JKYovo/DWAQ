@@ -35,6 +35,10 @@ from legged_lab.envs.elf3.ankle_cost import (
 from legged_lab.envs.elf3.foot_force_500 import (
     Elf3DwaqFootForce500Env, Elf3DwaqFootForce500Runner, make_configs as _force500_configs,
 )
+from legged_lab.envs.elf3.reward_curriculum import (
+    Elf3DwaqRewardCurriculumEnv, Elf3DwaqRewardCurriculumRunner,
+    make_configs as _reward_curriculum_configs,
+)
 
 task_registry.register("elf3_dwaq_feedback_v1", Elf3DwaqFeedbackEnv,
                        Elf3DwaqFeedbackEnvCfg(), Elf3DwaqFeedbackAgentCfg())
@@ -46,10 +50,14 @@ task_registry.register("elf3_dwaq_still_v2_ankle_cost_v1", Elf3DwaqAnkleCostEnv,
 _force500_env, _force500_agent = _force500_configs()
 task_registry.register("elf3_dwaq_still_v2_force500_v1", Elf3DwaqFootForce500Env,
                        _force500_env, _force500_agent)
+_curriculum_env, _curriculum_agent = _reward_curriculum_configs()
+task_registry.register("elf3_dwaq_still_v2_curriculum_v1", Elf3DwaqRewardCurriculumEnv,
+                       _curriculum_env, _curriculum_agent)
 
 __all__ = [
     "Elf3DwaqEnv", "Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackRunner",
     "Elf3DwaqStillEnv", "Elf3DwaqStillV2Runner",
     "Elf3DwaqAnkleCostEnv", "Elf3DwaqAnkleCostRunner",
     "Elf3DwaqFootForce500Env", "Elf3DwaqFootForce500Runner",
+    "Elf3DwaqRewardCurriculumEnv", "Elf3DwaqRewardCurriculumRunner",
 ]

@@ -18,15 +18,16 @@ SPEC.loader.exec_module(catalog)
 
 
 class SupportedTaskTests(unittest.TestCase):
-    def test_exact_four_public_tasks(self):
+    def test_original_four_tasks_plus_isolated_curriculum(self):
         expected = {"elf3_dwaq_feedback_v1", "elf3_dwaq_still_v2_ankle_cost_v1",
-                    "elf3_dwaq_still_v2", "elf3_dwaq_still_v2_force500_v1"}
+                    "elf3_dwaq_still_v2", "elf3_dwaq_still_v2_force500_v1",
+                    "elf3_dwaq_still_v2_curriculum_v1"}
         source = ROOT / "TienKung-Lab/legged_lab/envs/__init__.py"
         tree = ast.parse(source.read_text())
         names = [node.args[0].value for node in ast.walk(tree)
                  if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                  and node.func.attr == "register"]
-        self.assertEqual(len(names), 4)
+        self.assertEqual(len(names), 5)
         self.assertEqual(set(names), expected)
         self.assertEqual(set(catalog.TASKS), expected)
 
@@ -54,12 +55,14 @@ class SupportedTaskTests(unittest.TestCase):
         prefix = "legged_lab.envs.elf3."
         objects["ankle"] = (object(), object())
         objects["force500"] = (object(), object())
+        objects["curriculum"] = (object(), object())
         feedback_env = identity("Elf3DwaqFeedbackEnv")
         ankle_env = identity("Elf3DwaqAnkleCostEnv")
         still_env, force_env = identity("Elf3DwaqStillEnv"), identity("Elf3DwaqFootForce500Env")
+        curriculum_env = identity("Elf3DwaqRewardCurriculumEnv")
         runners = {name: identity(name) for name in (
             "Elf3DwaqFeedbackRunner", "Elf3DwaqAnkleCostRunner", "Elf3DwaqStillV2Runner",
-            "Elf3DwaqFootForce500Runner")}
+            "Elf3DwaqFootForce500Runner", "Elf3DwaqRewardCurriculumRunner")}
         stubs = {
             "legged_lab.utils.task_registry": module("registry", task_registry=SimpleNamespace(register=register)),
             prefix + "elf3_dwaq_env": module("base", Elf3DwaqEnv=identity("Elf3DwaqEnv")),
@@ -77,16 +80,20 @@ class SupportedTaskTests(unittest.TestCase):
             prefix + "foot_force_500": module("force500", Elf3DwaqFootForce500Env=force_env,
                  Elf3DwaqFootForce500Runner=runners["Elf3DwaqFootForce500Runner"],
                  make_configs=factory("force500")),
+            prefix + "reward_curriculum": module("curriculum", Elf3DwaqRewardCurriculumEnv=curriculum_env,
+                 Elf3DwaqRewardCurriculumRunner=runners["Elf3DwaqRewardCurriculumRunner"],
+                 make_configs=factory("curriculum")),
         }
         namespace = {}
         with patch.dict(sys.modules, stubs):
             source = ROOT / "TienKung-Lab/legged_lab/envs/__init__.py"
             exec(compile(source.read_text(), str(source), "exec"), namespace)
-        self.assertEqual(factory_calls, ["ankle", "force500"])
+        self.assertEqual(factory_calls, ["ankle", "force500", "curriculum"])
         self.assertEqual(registered["elf3_dwaq_feedback_v1"][0], feedback_env)
         self.assertEqual(registered["elf3_dwaq_still_v2_ankle_cost_v1"], (ankle_env, *objects["ankle"]))
         self.assertEqual(registered["elf3_dwaq_still_v2"][0], still_env)
         self.assertEqual(registered["elf3_dwaq_still_v2_force500_v1"], (force_env, *objects["force500"]))
+        self.assertEqual(registered["elf3_dwaq_still_v2_curriculum_v1"], (curriculum_env, *objects["curriculum"]))
         for name, runner in runners.items():
             self.assertIn(name, namespace["__all__"])
             self.assertIs(namespace[name], runner)

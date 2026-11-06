@@ -13,6 +13,7 @@ TASKS = {
     "elf3_dwaq_still_v2": "scripts/train_elf3_still_v2_restored.py",
     "elf3_dwaq_still_v2_ankle_cost_v1": "scripts/train_elf3_ankle_cost.py",
     "elf3_dwaq_still_v2_force500_v1": "scripts/train_elf3_force500.py",
+    "elf3_dwaq_still_v2_curriculum_v1": "scripts/train_elf3_reward_curriculum.py",
 }
 RETIRED_ENTRYPOINTS = frozenset({
     "scripts/train_0918_melody.py", "scripts/train_0918_melody.sh",

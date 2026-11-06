@@ -37,7 +37,7 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "source/asset drift"):
                 checks.check_source_manifest(root)
 
-    def test_only_four_public_tasks_registered(self):
+    def test_supported_tasks_include_isolated_reward_curriculum(self):
         source = ROOT / "TienKung-Lab/legged_lab/envs/__init__.py"
         tasks = [node.args[0].value for node in ast.walk(ast.parse(source.read_text()))
                  if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
@@ -45,7 +45,8 @@ class ReleaseTests(unittest.TestCase):
                  and isinstance(node.args[0].value, str) and node.args[0].value.startswith("elf3_")]
         self.assertEqual(set(tasks), {"elf3_dwaq_feedback_v1",
                                      "elf3_dwaq_still_v2", "elf3_dwaq_still_v2_ankle_cost_v1",
-                                     "elf3_dwaq_still_v2_force500_v1"})
+                                     "elf3_dwaq_still_v2_force500_v1",
+                                     "elf3_dwaq_still_v2_curriculum_v1"})
 
     def test_asset_limits_and_unchanged_deployment_scale(self):
         contract = json.loads((ROOT / "TienKung-Lab/legged_lab/configs/elf3/contract.json").read_text())
