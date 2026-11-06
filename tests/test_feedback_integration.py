@@ -404,7 +404,8 @@ class LauncherAndConfigIntegrationTests(unittest.TestCase):
         self.assertEqual(registered["elf3_dwaq_feedback_v1"],
                          ["Elf3DwaqFeedbackEnv", "Elf3DwaqFeedbackEnvCfg()", "Elf3DwaqFeedbackAgentCfg()"])
         self.assertEqual(set(registered), {"elf3_dwaq_feedback_v1",
-                                          "elf3_dwaq_still_v2_ankle_cost_v1"})
+                                          "elf3_dwaq_still_v2", "elf3_dwaq_still_v2_ankle_cost_v1",
+                                          "elf3_dwaq_still_v2_force500_v1"})
 
 
 if __name__ == "__main__":

@@ -18,14 +18,15 @@ SPEC.loader.exec_module(catalog)
 
 
 class SupportedTaskTests(unittest.TestCase):
-    def test_exact_two_public_tasks(self):
-        expected = {"elf3_dwaq_feedback_v1", "elf3_dwaq_still_v2_ankle_cost_v1"}
+    def test_exact_four_public_tasks(self):
+        expected = {"elf3_dwaq_feedback_v1", "elf3_dwaq_still_v2_ankle_cost_v1",
+                    "elf3_dwaq_still_v2", "elf3_dwaq_still_v2_force500_v1"}
         source = ROOT / "TienKung-Lab/legged_lab/envs/__init__.py"
         tree = ast.parse(source.read_text())
         names = [node.args[0].value for node in ast.walk(tree)
                  if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                  and node.func.attr == "register"]
-        self.assertEqual(len(names), 2)
+        self.assertEqual(len(names), 4)
         self.assertEqual(set(names), expected)
         self.assertEqual(set(catalog.TASKS), expected)
 
@@ -52,10 +53,13 @@ class SupportedTaskTests(unittest.TestCase):
 
         prefix = "legged_lab.envs.elf3."
         objects["ankle"] = (object(), object())
+        objects["force500"] = (object(), object())
         feedback_env = identity("Elf3DwaqFeedbackEnv")
         ankle_env = identity("Elf3DwaqAnkleCostEnv")
+        still_env, force_env = identity("Elf3DwaqStillEnv"), identity("Elf3DwaqFootForce500Env")
         runners = {name: identity(name) for name in (
-            "Elf3DwaqFeedbackRunner", "Elf3DwaqAnkleCostRunner")}
+            "Elf3DwaqFeedbackRunner", "Elf3DwaqAnkleCostRunner", "Elf3DwaqStillV2Runner",
+            "Elf3DwaqFootForce500Runner")}
         stubs = {
             "legged_lab.utils.task_registry": module("registry", task_registry=SimpleNamespace(register=register)),
             prefix + "elf3_dwaq_env": module("base", Elf3DwaqEnv=identity("Elf3DwaqEnv")),
@@ -63,17 +67,26 @@ class SupportedTaskTests(unittest.TestCase):
             prefix + "elf3_feedback_config": module("config", Elf3DwaqFeedbackEnvCfg=identity("EnvCfg"),
                                                     Elf3DwaqFeedbackAgentCfg=identity("AgentCfg")),
             prefix + "feedback_runner": module("runner", Elf3DwaqFeedbackRunner=runners["Elf3DwaqFeedbackRunner"]),
+            prefix + "still_env": module("still", Elf3DwaqStillEnv=still_env),
+            prefix + "elf3_still_v2_config": module("still_config", Elf3DwaqStillV2EnvCfg=identity("StillCfg"),
+                                                    Elf3DwaqStillV2AgentCfg=identity("StillAgentCfg")),
+            prefix + "still_v2_runner": module("still_runner", Elf3DwaqStillV2Runner=runners["Elf3DwaqStillV2Runner"]),
             prefix + "ankle_cost": module("ankle", Elf3DwaqAnkleCostEnv=ankle_env,
                                           Elf3DwaqAnkleCostRunner=runners["Elf3DwaqAnkleCostRunner"],
                                           make_configs=factory("ankle")),
+            prefix + "foot_force_500": module("force500", Elf3DwaqFootForce500Env=force_env,
+                 Elf3DwaqFootForce500Runner=runners["Elf3DwaqFootForce500Runner"],
+                 make_configs=factory("force500")),
         }
         namespace = {}
         with patch.dict(sys.modules, stubs):
             source = ROOT / "TienKung-Lab/legged_lab/envs/__init__.py"
             exec(compile(source.read_text(), str(source), "exec"), namespace)
-        self.assertEqual(factory_calls, ["ankle"])
+        self.assertEqual(factory_calls, ["ankle", "force500"])
         self.assertEqual(registered["elf3_dwaq_feedback_v1"][0], feedback_env)
         self.assertEqual(registered["elf3_dwaq_still_v2_ankle_cost_v1"], (ankle_env, *objects["ankle"]))
+        self.assertEqual(registered["elf3_dwaq_still_v2"][0], still_env)
+        self.assertEqual(registered["elf3_dwaq_still_v2_force500_v1"], (force_env, *objects["force500"]))
         for name, runner in runners.items():
             self.assertIn(name, namespace["__all__"])
             self.assertIs(namespace[name], runner)
@@ -95,7 +108,7 @@ class SupportedTaskTests(unittest.TestCase):
             for task in catalog.TASKS:
                 for flags in (["--task", task], ["--task=" + task]):
                     catalog.check_entrypoint([str(ROOT / entrypoint), *flags])
-            for task in ("elf3_dwaq_still_v2", "elf3_dwaq_consistent_v1", "g1_dwaq", "walk"):
+            for task in ("elf3_dwaq_still", "elf3_dwaq_consistent_v1", "g1_dwaq", "walk"):
                 with self.subTest(task=task), self.assertRaisesRegex(ValueError, "Retired/unknown task"):
                     catalog.check_entrypoint([str(ROOT / entrypoint), "--task=" + task])
 

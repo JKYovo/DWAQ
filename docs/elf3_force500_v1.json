@@ -1,0 +1,104 @@
+{
+  "version": "elf3_dwaq_still_v2_force500_public_v1",
+  "task": "elf3_dwaq_still_v2_force500_v1",
+  "entrypoint": "scripts/train_elf3_force500.py",
+  "runtime_runner": "Elf3DwaqFootForce500Runner",
+  "configuration_factory": "legged_lab.envs.elf3.foot_force_500.make_configs",
+  "initialization": {
+    "default": "from_scratch",
+    "private_parent_required": false,
+    "resume": "strict same500N full contract; restore model/Adam/LR/completed iteration",
+    "environment_state_restored": false,
+    "no_automatic_restart": true
+  },
+  "training": {
+    "num_envs": 16384,
+    "seed": 42,
+    "steps_per_env": 24,
+    "mini_batches": 4,
+    "ppo_epochs": 5,
+    "total_update_count": 100001,
+    "final_checkpoint": "model_100000.pt",
+    "save_interval": 500,
+    "learning_rate_schedule": "existing adaptive",
+    "min_learning_rate": 0.00001,
+    "max_learning_rate": 0.0003,
+    "upper_body_mirror_loss": 0.1,
+    "upper_body_pose_loss": 0.02,
+    "safe_defaults": {
+      "num_envs": 64,
+      "updates": 20
+    }
+  },
+  "interface": {
+    "frame_size": 100,
+    "history_length": 5,
+    "flat_input": 500,
+    "num_actions": 29,
+    "actor_context": "deterministic encoder mean",
+    "physics_dt": 0.005,
+    "control_dt": 0.02,
+    "joint_velocity_observation_feedback_hz": 20,
+    "feedback_does_not_filter_PD_or_output_actions": true
+  },
+  "asset": {
+    "path": "TienKung-Lab/legged_lab/assets/elf3",
+    "physical_PD": "implicit",
+    "armature": 0.01,
+    "effort_velocity_PD_scale_home": "unchanged named-joint contract.json; no recalculation",
+    "mass_kg": 43.2225077
+  },
+  "rewards": {
+    "feet_force": {
+      "weight": -0.005,
+      "threshold_n": 500,
+      "excess_cap_n": 400,
+      "sampling": "max over4 physical substeps of simultaneous sqrt(Fz_left^2+Fz_right^2)",
+      "formula": "-0.005 * clip(peak-500,0,400); RewardManager control dt once",
+      "not_a_hardware_force_limit": true
+    },
+    "ankle_torque_l2": {
+      "weight": -0.0005,
+      "joints": [
+        "l_ankle_x_joint",
+        "l_ankle_y_joint",
+        "r_ankle_x_joint",
+        "r_ankle_y_joint"
+      ]
+    },
+    "stance_foot_speed": {
+      "weight": -1,
+      "gate": "smooth clock stance; nonzero command; not actual-contact gate"
+    },
+    "action_rate_l2": -0.012,
+    "action_smooth": -0.001,
+    "dof_acc_l2": -3e-7,
+    "moving_height": {
+      "weight": -50,
+      "target_height_m": 1.034915354172388,
+      "deadband_m": 0.015,
+      "formula": "terrain_gate*relu(target-deadband-relative_torso_height)^2",
+      "gate": "moving only, positive actual foot support, finite valid nearby scans, terrain height span<=3cm; full at<=1cm"
+    },
+    "standing": "unchanged original still_v2 strict-zero motion/default leg-waist posture and phase preprocessing",
+    "excluded_runtime_terms": [
+      "support_knee_excess_l2",
+      "near_ground_descent",
+      "support_knee_pose"
+    ],
+    "dependency_note": "Historical motion_quality/soft_step_rewards modules remain required mathematical/validation dependencies. Their discarded knee/soft-step reward terms are NOT present in the final RewardManager."
+  },
+  "commands": {
+    "scratch": "./elf3.sh scripts/train_elf3_force500.py --headless --device cuda:0 --num-envs 16384 --iterations 100001 --seed 42 --run-name force500_scratch_16384_seed42 --swanlab-project DWAQ",
+    "smoke": "./elf3.sh scripts/train_elf3_force500.py --headless --num-envs 64 --iterations 20 --run-name force500_smoke",
+    "config_only": "./elf3.sh scripts/train_elf3_force500.py --headless --num-envs 16384 --iterations 100001 --verify-config-only",
+    "resume": "./elf3.sh scripts/train_elf3_force500.py --headless --num-envs 16384 --iterations 100001 --resume /path/to/force500_run/model_50000.pt --run-name force500_resume --swanlab-project DWAQ"
+  },
+  "limitations": [
+    "Same effective final recipe does NOT reproduce the historical staged optimization trajectory or guarantee equal stairs/hardware performance.",
+    "No private checkpoints/logs, raw hardware data, credentials or local account/run IDs are shipped.",
+    "No independently validated500N stairs improvement or scratch convergence claim.",
+    "A new machine creates its own TensorBoard/SwanLab run; no original cloud history is imported.",
+    "Generic native play with modified terrain/batch is not validated for this strict runner; use the exporter and MuJoCo path."
+  ]
+}

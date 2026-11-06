@@ -19,7 +19,9 @@
 | 任务 | 用途 | 训练入口 |
 | --- | --- | --- |
 | `elf3_dwaq_feedback_v1` | 20 Hz 关节速度反馈基线 | `scripts/train_elf3_feedback.py` |
+| `elf3_dwaq_still_v2` | 恢复的原始零指令静止／腿腰姿态任务 | `scripts/train_elf3_still_v2_restored.py` |
 | `elf3_dwaq_still_v2_ankle_cost_v1` | 零指令静止、默认腿腰姿态及踝部成本版本 | `scripts/train_elf3_ankle_cost.py` |
+| `elf3_dwaq_still_v2_force500_v1` | 当前500 N足力峰值、动作平滑及运动高度版本，可从零训练 | `scripts/train_elf3_force500.py` |
 
 查看任务入口：
 
@@ -27,7 +29,7 @@
 ./elf3.sh scripts/elf3_task_catalog.py
 ```
 
-仅以上两个任务公开注册。其他配置和脚本保留为继承、严格校验及历史模型导出的内部依赖，不再作为公开训练入口。
+以上四个任务公开注册。其他配置和脚本保留为继承、严格校验及历史模型导出的内部依赖，不再作为公开训练入口。
 
 ## 环境与安装
 
@@ -55,6 +57,17 @@ bash scripts/setup_elf3_env.sh
 
 ### 从零训练
 
+当前500 N版（独立从零，不要求历史权重或本机日志）：
+
+```bash
+./elf3.sh scripts/train_elf3_force500.py \
+  --headless --device cuda:0 --num-envs 16384 --iterations 100001 --seed 42 \
+  --run-name force500_scratch_16384_seed42 \
+  --swanlab-project DWAQ
+```
+
+该版保留原still_v2、踝力矩成本及20 Hz反馈，采用足力权重`−0.005`、起罚阈值`500 N`、整个控制周期峰值采样、`action_smooth=−0.001`、`dof_acc_l2=−3e−7`及运动高度下限项。膝角阈值／软落脚试验项不启用；详见[完整配方](docs/elf3_force500_v1.json)。从零使用最终奖励不等于历史分阶段续训，不保证相同效果。
+
 踝部成本版：
 
 ```bash
@@ -74,7 +87,7 @@ bash scripts/setup_elf3_env.sh
   --swanlab-project DWAQ
 ```
 
-两份示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。两入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查。
+示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。专用入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查。
 
 环境数可按显存调整；不同硬件、环境数或初始化历史不保证得到相同训练曲线与策略。上述命令从随机权重开始，不会自动加载历史模型。
 
@@ -90,7 +103,7 @@ bash scripts/setup_elf3_env.sh
   --swanlab-project DWAQ
 ```
 
-反馈基线使用 `scripts/train_elf3_feedback.py` 的 `--resume`。续训需匹配检查点的任务、环境及 Agent 契约，包括环境数；不能混用两个任务、旧资产版本或 AMP 权重。
+反馈基线使用 `scripts/train_elf3_feedback.py` 的 `--resume`；500 N版使用 `scripts/train_elf3_force500.py --resume /path/to/model.pt`，仅接受同配方500 N检查点。续训需匹配检查点的任务、环境及 Agent 契约，包括环境数；不能混用不同任务、旧资产版本或 AMP 权重。
 
 续训恢复网络、Adam、学习率和迭代编号，但不恢复物理状态、地形课程等级、随机数流、观测历史或反馈滤波历史。专用入口写入新日志目录，不覆盖父模型。已有兼容父模型的显式迁移方式见各配方说明；从零训练不等同于复现某次历史续训。
 
@@ -101,6 +114,7 @@ bash scripts/setup_elf3_env.sh
 ```text
 logs/elf3_dwaq_feedback_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_ankle_cost_v1/<时间戳>_<run_name>/
+logs/elf3_dwaq_still_v2_force500_v1/<时间戳>_<run_name>/
 ```
 
 TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登录自己的账号：
@@ -136,11 +150,11 @@ TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登
 
 `--command VX VY WZ` 固定机体坐标系速度指令；不指定时默认前进 `1.0 m/s`。Play 关闭观测噪声及周期推力。`rough --difficulty 1.0` 对应训练 Level 16，楼梯最高 30 cm；独立 `stairs` 测试地形的台阶为 20～25 cm，不等于该训练等级。
 
-以上原生 Play 示例仅针对反馈基线。踝部成本版 runner 有额外的完整配置校验，尚未确认兼容修改地形／环境数的通用 Play；请优先导出后使用下述 MuJoCo 回放。
+以上原生 Play 示例仅针对反馈基线。踝部成本版及500 N版 runner 有额外的完整配置校验，尚未确认兼容修改地形／环境数的通用 Play；请优先导出后使用下述 MuJoCo 回放。
 
 ### 导出 ONNX／TorchScript
 
-两个公开任务均使用同一导出入口。替换实际检查点路径，输出目录必须尚不存在：
+公开任务使用同一导出入口。替换实际检查点路径，输出目录必须尚不存在：
 
 ```bash
 ./elf3.sh scripts/export_elf3_dwaq.py \
@@ -206,7 +220,8 @@ TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登
 elf3.sh                          # 项目环境启动入口
 scripts/
   setup_elf3_env.sh               # 安装
-  elf3_task_catalog.py            # 两个公开任务
+  elf3_task_catalog.py            # 四个公开任务
+  train_elf3_force500.py          # 当前500 N配方，从零／同配方续训
   train_elf3_feedback.py          # 反馈基线
   train_elf3_ankle_cost.py        # 静止／踝部成本版
   export_elf3_dwaq.py             # 导出

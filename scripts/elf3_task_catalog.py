@@ -10,7 +10,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 TASKS = {
     "elf3_dwaq_feedback_v1": "scripts/train_elf3_feedback.py",
+    "elf3_dwaq_still_v2": "scripts/train_elf3_still_v2_restored.py",
     "elf3_dwaq_still_v2_ankle_cost_v1": "scripts/train_elf3_ankle_cost.py",
+    "elf3_dwaq_still_v2_force500_v1": "scripts/train_elf3_force500.py",
 }
 RETIRED_ENTRYPOINTS = frozenset({
     "scripts/train_0918_melody.py", "scripts/train_0918_melody.sh",
@@ -73,7 +75,8 @@ def main(arguments=None):
         return 2
     for task, entrypoint in TASKS.items():
         print(f"{task}\n  ./elf3.sh {entrypoint}")
-    print("Generic train.py accepts these two --task IDs; resume requires identical configuration.")
+    print("Generic train.py accepts these task IDs; resume requires identical configuration.")
+    print("force500 supports scratch or strict same-stage resume; no private logs/checkpoints required.")
     return 0
 
 
