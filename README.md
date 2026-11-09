@@ -21,8 +21,8 @@
 | `elf3_dwaq_feedback_v1` | 20 Hz 关节速度反馈基线 | `scripts/train_elf3_feedback.py` |
 | `elf3_dwaq_still_v2` | 恢复的原始零指令静止／腿腰姿态任务 | `scripts/train_elf3_still_v2_restored.py` |
 | `elf3_dwaq_still_v2_ankle_cost_v1` | 零指令静止、默认腿腰姿态及踝部成本版本 | `scripts/train_elf3_ankle_cost.py` |
-| `elf3_dwaq_still_v2_force500_v1` | 当前500 N足力峰值、动作平滑及运动高度版本，可从零训练 | `scripts/train_elf3_force500.py` |
-| `elf3_dwaq_still_v2_curriculum_v1` | 先学still_v2，随后线性开启踝部、运动高度及平滑约束 | `scripts/train_elf3_reward_curriculum.py` |
+| `elf3_dwaq_still_v2_force500_v1（可用于后续微调）` | 当前500 N足力峰值、动作平滑及运动高度版本 | `scripts/train_elf3_force500.py` |
+| `elf3_dwaq_still_v2_curriculum_v1（推荐）` | 先学still_v2，随后线性开启踝部、运动高度及平滑约束 | `scripts/train_elf3_reward_curriculum.py` |
 
 查看任务入口：
 
@@ -69,36 +69,6 @@ bash scripts/setup_elf3_env.sh
 ```
 
 先用still_v2目标训练到20000轮，随后10000轮线性开启后续质量约束，30000轮后保持最终配方，结束于`model_50000.pt`。课程全阶段均使用500 N足力阈值和控制周期峰值采样；资产、PD、20 Hz反馈、命令采样及PPO不变。课程进度写入检查点，续训必须匹配原时间表；原始still_v2父模型显式迁移及提前开启二阶段的方法见[课程说明](docs/elf3_reward_curriculum_v1.md)。该新课程不保证复现历史多阶段训练效果。
-
-固定最终奖励500 N版（对照配方，独立从零）：
-
-```bash
-./elf3.sh scripts/train_elf3_force500.py \
-  --headless --device cuda:0 --num-envs 16384 --iterations 100001 --seed 42 \
-  --run-name force500_scratch_16384_seed42 \
-  --swanlab-project DWAQ
-```
-
-该版保留原still_v2、踝力矩成本及20 Hz反馈，采用足力权重`−0.005`、起罚阈值`500 N`、整个控制周期峰值采样、`action_smooth=−0.001`、`dof_acc_l2=−3e−7`及运动高度下限项。膝角阈值／软落脚试验项不启用；详见[完整配方](docs/elf3_force500_v1.json)。从零使用最终奖励不等于历史分阶段续训，不保证相同效果。
-
-踝部成本版：
-
-```bash
-./elf3.sh scripts/train_elf3_ankle_cost.py \
-  --headless --device cuda:0 --num-envs 16384 --iterations 100001 \
-  --run-name ankle_cost_scratch_16384_seed42 \
-  --swanlab-project DWAQ
-```
-
-反馈基线：
-
-```bash
-./elf3.sh scripts/train_elf3_feedback.py \
-  --task elf3_dwaq_feedback_v1 --headless --device cuda:0 \
-  --num-envs 4096 --iterations 100001 --seed 42 \
-  --run-name feedback_scratch_4096_seed42 \
-  --swanlab-project DWAQ
-```
 
 示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。专用入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查。
 
