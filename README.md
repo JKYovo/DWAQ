@@ -72,6 +72,9 @@ bash scripts/setup_elf3_env.sh
 
 示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。专用入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查。
 
+<img width="488" height="307" alt="图片" src="https://github.com/user-attachments/assets/d5723ece-a289-4e10-b206-c52dac99f2d6" />
+
+
 环境数可按显存调整；不同硬件、环境数或初始化历史不保证得到相同训练曲线与策略。上述命令从随机权重开始，不会自动加载历史模型。
 
 ### 同任务续训
