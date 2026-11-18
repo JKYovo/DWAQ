@@ -135,7 +135,7 @@
       "scripts/train_elf3_reward_curriculum.py": "9db7f90b57974c022666c585832fb813950d7e7c331ab8c6e14c7659931fe4e8",
       "docs/elf3_reward_curriculum_v1.md": "178c2e547bca825ea6ee418961c8c6f44acd94adb90146c47f0f0646be3a8244",
       "tests/test_reward_curriculum.py": "320d2442dcb822012b2f1056e6f46170e1d99cdb384d0a670904e2a1cc0596ef",
-      "README.md": "ce0ca3389963fd4901e367b880852f9711849906738c21109b75ffb076c363b1",
+      "README.md": "51252b6425e4ca5f68a30f211e78cce768934fa1af1b109d1640a192aed34555",
       "docs/releases/elf3_force500_79000_v1.md": "ea2c8abf53f88a9647dc6bdaa7d5a1276ccdc2fba135397f8e7eff3b2171b63f",
       "docs/releases/elf3_force500_79000.sha256": "4398845fb90c8bf10cf29acd361132573b895d2a3004157827ebbde651425dc2",
       "TienKung-Lab/legged_lab/envs/elf3/recovery_v2_core.py": "de761631a2ef8484468dfceb2f56aeb7a19ddd6c83ec2db1b2144afaa0ea0f6a",
