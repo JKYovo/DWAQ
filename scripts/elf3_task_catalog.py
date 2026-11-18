@@ -15,6 +15,9 @@ TASKS = {
     "elf3_dwaq_still_v2_force500_v1": "scripts/train_elf3_force500.py",
     "elf3_dwaq_still_v2_curriculum_v1": "scripts/train_elf3_reward_curriculum.py",
 }
+WORKFLOWS = {
+    "elf3_dwaq_recovery_curriculum_v1": "scripts/train_elf3_recovery_curriculum.py",
+}
 RETIRED_ENTRYPOINTS = frozenset({
     "scripts/train_0918_melody.py", "scripts/train_0918_melody.sh",
     "scripts/train_elf3_cached_visuals.py", "scripts/train_elf3_stand.py",
@@ -76,6 +79,8 @@ def main(arguments=None):
         return 2
     for task, entrypoint in TASKS.items():
         print(f"{task}\n  ./elf3.sh {entrypoint}")
+    for course, entrypoint in WORKFLOWS.items():
+        print(f"{course} (0..50000 walking course, then50001..80000 recovery)\n  ./elf3.sh {entrypoint}")
     print("Generic train.py accepts these task IDs; resume requires identical configuration.")
     print("force500 supports scratch or strict same-stage resume; no private logs/checkpoints required.")
     return 0

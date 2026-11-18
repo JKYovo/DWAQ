@@ -1,0 +1,29 @@
+{
+  "version": "elf3_dwaq_recovery40_init_v4",
+  "date": "2026-11-17T12:02:47.789728+08:00",
+  "poses": 4096,
+  "seed": 20261117,
+  "attempts": 8112,
+  "rejected": {
+    "self_penetration": 3988,
+    "orientation_or_height": 28
+  },
+  "kind_counts": {
+    "perturbed_supine_reference": 2048,
+    "procedural_supine": 2048
+  },
+  "bank_sha256": "391cbea281209dc68549418906e37851a0e392ff3b1b9ea8668a772b8072c3e8",
+  "generator_sha256": "44bc456bbed36158b190db46c03bdd75f5162722ce023a99e6487daa0eac1a4c",
+  "asset_contract_sha256": "d3ae8408b6789523724c52d090bd3a0d2824df897c2ba5b174f6655e24994093",
+  "reference_motion_sha256": "ee62d1c82160df98151ac33eeb2d97b1d472cd22e25af30c59188100215c0d5f",
+  "offline_FK_asset": "/home/cheng/DWAQ_recovery_20261113/TienKung-Lab/legged_lab/assets/elf3/mjcf/elf3.xml",
+  "offline_FK_asset_sha256": "75ba06042b4cf6e5f4aca53b1c42b8a7947364d9d9b27dca191398d5bb186e03",
+  "floor_clearance_m": [
+    0.005,
+    0.02
+  ],
+  "reject_self_penetration_below_m": -0.01,
+  "joint_limits": "original soft factor0.9; native names",
+  "reference_motion_bytes_changed": false,
+  "robot_assets_changed": false
+}

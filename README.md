@@ -10,9 +10,10 @@
 - Actor 仅使用本体感觉：单帧 100 维、5 帧历史，输出 29 维动作。
 - 保留 CENet 速度／隐变量估计、上肢镜像及软默认姿态辅助损失。
 - 17 级混合地形课程，楼梯高度上限 30 cm。
+- 完整课程在 50000 轮行走检查点后加入平地起身，训练至 80000 轮。
 - 支持 TensorBoard、SwanLab、TorchScript／ONNX 导出和 MuJoCo Sim2Sim。
 
-> 本项目不使用 AMP 动作数据或 AMP 权重。源码仓库不包含训练权重、ONNX、私有训练日志或真机数据；地形课程上限也不代表已达到对应的实机通过率。
+> 行走任务使用 DWAQ；新增起身阶段使用动作片段初始化及恢复期间的 AMP 判别器，不加载 AMP 策略权重。仓库包含该阶段所需的动作片段和仰躺姿态库，不包含训练权重、ONNX、私有训练日志或真机数据。
 
 ## 公开训练任务
 
@@ -31,6 +32,8 @@
 ```
 
 以上五个任务公开注册。其他配置和脚本保留为继承、严格校验及历史模型导出的内部依赖，不再作为公开训练入口。
+
+**行走＋起身完整课程**使用 `scripts/train_elf3_recovery_curriculum.py`：先运行原奖励课程至 `model_50000.pt`，随后自动进入当前起身配方，结束于 `model_80000.pt`。它组合两个专用入口，不是通用 `train.py --task` 任务。起身阶段单独使用 `scripts/train_elf3_recovery_stage.py`。
 
 ## 环境与安装
 
@@ -56,6 +59,27 @@ bash scripts/setup_elf3_env.sh
 
 ## 训练
 
+### 完整课程：行走 0～50000，再起身至 80000
+
+```bash
+./elf3.sh scripts/train_elf3_recovery_curriculum.py \
+  --headless --device cuda:0 --num-envs 16384 --iterations 80001 --seed 42 \
+  --run-name curriculum_recovery80k --swanlab-project DWAQ
+```
+
+前 50000 轮沿用下述奖励时间表；保存 `model_50000.pt` 后，恢复策略、Adam 和学习率，从 50001 轮启用当前起身训练：40% 环境在独立平地区域恢复，60% 保留原混合地形行走。恢复初始化使用 50% 原片段姿态＋50% 增强仰躺姿态；75% 零速度、20% 小速度、5% 较大速度。恢复期间关闭冲突奖励及上肢默认姿态辅助损失；躯干高度达到 0.84 m 即恢复正常 DWAQ 奖励。完整参数见[课程说明](docs/elf3_reward_curriculum_v1.md#起身阶段50000到80000)。
+
+已有原课程的 `model_50000.pt` 时直接接入，无需重新跑前半段：
+
+```bash
+./elf3.sh scripts/train_elf3_recovery_curriculum.py \
+  --headless --device cuda:0 --num-envs 16384 --iterations 80001 \
+  --resume /path/to/curriculum/model_50000.pt \
+  --run-name recovery_from50000 --swanlab-project DWAQ
+```
+
+相同入口的 `--resume` 也支持原课程中断点和当前 init-v4 起身检查点。总目标必须高于已完成轮次；在 80000 继续更久时使用起身专用入口并显式指定新总目标。`--dry-run` 只打印阶段计划，不启动仿真。每阶段创建独立日志及 SwanLab run；技术中断会退出，不自动重启。
+
 ### 从零训练
 
 奖励课程版（独立从零，不要求历史权重或本机日志）：
@@ -70,7 +94,7 @@ bash scripts/setup_elf3_env.sh
 
 先用still_v2目标训练到20000轮，随后10000轮线性开启后续质量约束，30000轮后保持最终配方，结束于`model_50000.pt`。课程全阶段均使用500 N足力阈值和控制周期峰值采样；资产、PD、20 Hz反馈、命令采样及PPO不变。课程进度写入检查点，续训必须匹配原时间表；原始still_v2父模型显式迁移及提前开启二阶段的方法见[课程说明](docs/elf3_reward_curriculum_v1.md)。该新课程不保证复现历史多阶段训练效果。
 
-示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。专用入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查。
+示例使用 seed 42，24 steps/env、4 mini-batches、5 PPO epochs，每 500 轮保存。`--iterations` 表示**总目标更新数**，`100001` 对应编号 0～100000，最终保存 `model_100000.pt`。原五个专用入口省略轮数／环境数时默认仅做 64 环境、20 轮技术检查；新增完整课程及起身入口默认 16384 环境、目标 80000 轮。
 
 <img width="488" height="307" alt="图片" src="https://github.com/user-attachments/assets/d5723ece-a289-4e10-b206-c52dac99f2d6" />
 
@@ -104,6 +128,8 @@ logs/elf3_dwaq_feedback_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_ankle_cost_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_force500_v1/<时间戳>_<run_name>/
 logs/elf3_dwaq_still_v2_curriculum_v1/<时间戳>_<run_name>/
+logs/elf3_dwaq_recovery40_init_v4/<时间戳>_<run_name>_<pid>/
+logs/elf3_dwaq_recovery_curriculum_v1/<时间戳>_<run_name>_<pid>/course.json
 ```
 
 TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登录自己的账号：
@@ -154,6 +180,16 @@ TensorBoard 为主日志，SwanLab 使用独立进程补传。首次使用请登
 输出 `policy.pt`、`policy.onnx` 和 `policy.json`。导出使用确定性 CENet 均值路径，校验权重、接口和数值一致性；原检查点只读。踝部成本版的零指令相位处理已嵌入模型，无需部署侧重新实现。
 
 ### MuJoCo 回放
+
+起身模型使用导出的 ONNX 和同目录 `policy.json`，零指令平地躺倒初始化：
+
+```bash
+./elf3.sh scripts/play_elf3_recovery_mujoco.py \
+  --policy artifacts/elf3_policy_80000/policy.onnx \
+  --command 0 0 0 --reset-seconds 0
+```
+
+起身由同一个策略完成，不需要部署侧切换两个网络。高度交接控制的是训练奖励，Actor 仍保持原来的 500 维输入、29 维输出。
 
 使用导出的 `policy.pt`：
 
@@ -211,6 +247,8 @@ scripts/
   setup_elf3_env.sh               # 安装
   elf3_task_catalog.py            # 五个公开任务
   train_elf3_reward_curriculum.py # still_v2→最终500 N奖励课程
+  train_elf3_recovery_curriculum.py # 0～50000行走→50001～80000起身
+  train_elf3_recovery_stage.py    # 当前40%平地恢复配方／严格续训
   train_elf3_force500.py          # 当前500 N配方，从零／同配方续训
   train_elf3_feedback.py          # 反馈基线
   train_elf3_ankle_cost.py        # 静止／踝部成本版
@@ -222,6 +260,7 @@ TienKung-Lab/legged_lab/
   envs/elf3/                      # 环境、奖励、配置与 runner
   terrains/                      # 地形课程
 tests/                           # 回归测试
+data/                            # 起身动作片段及增强仰躺初始化库
 docs/                            # 配方、资产来源及历史记录
 ```
 

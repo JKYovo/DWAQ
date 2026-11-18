@@ -1,0 +1,92 @@
+{
+  "version": "elf3_recovery_curriculum_50k_80k_v1",
+  "date": "2026-11-18",
+  "entrypoint": "scripts/train_elf3_recovery_curriculum.py",
+  "recovery_entrypoint": "scripts/train_elf3_recovery_stage.py",
+  "stage_task": "elf3_dwaq_recovery40_init_v4",
+  "default_num_envs": 16384,
+  "seed": 42,
+  "stages": [
+    {
+      "name": "walking",
+      "first_iteration": 0,
+      "last_iteration": 50000,
+      "reward_ramp": [
+        20000,
+        30000
+      ]
+    },
+    {
+      "name": "recovery",
+      "first_iteration": 50001,
+      "last_iteration": 80000,
+      "updates": 30000,
+      "recovery_fraction": 0.4,
+      "terrain_walking_fraction": 0.6
+    }
+  ],
+  "historical_lineage": "The running experiment enabled enhanced supine initialization after60000. This publication applies its final init-v4 recipe immediately after curriculum50000. It does not reproduce the historical intermediate experiments.",
+  "snapshot_sources_sha256": {
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_v2_core.py": "de761631a2ef8484468dfceb2f56aeb7a19ddd6c83ec2db1b2144afaa0ea0f6a",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_v2_amp.py": "dbf895ba58b8c617824d7eecbc34ff734f385246a9581185255ab1fd6e9a22a6",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_v2_env.py": "f614a6a6456d040b9256231bf569ea1097368615db4af08b4a0c5e785b1d080f",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_v2_runner.py": "c74601859f082976aead2699de2cbbc55d5cd983a21ecf51ea2516494c001cf9",
+    "TienKung-Lab/legged_lab/envs/elf3/flat_recovery_core.py": "101b31a6641fb217890b60cf5685d618fcb9a0219888efba8ab2c05418789e90",
+    "TienKung-Lab/legged_lab/envs/elf3/flat_recovery_env.py": "a45a0d37bc05d985dd6e00c05f7ac1810e3bb3269e0d7ea11d6980b47219a60e",
+    "TienKung-Lab/legged_lab/envs/elf3/flat_recovery_runner.py": "cae924b3fa256351e5d921bd1666ab3ee36679c7d014d61f222932e18712a723",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_init_core.py": "38495230bef93c205f1c17f2482ed1c5413745c1fcb5ded56e837e5760b6b92c",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_init_env.py": "3e7b103a51032e84a089e86f997cc3c31f3b908801c1f03de3c7eeb1dc056240",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_init_runner.py": "97dcc3f5bf2f56f25f95a7122ba369aff8fac6a7dea6404f7e91c559aa3fa24e"
+  },
+  "publication_sources_sha256": {
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_course.py": "0cae5aa74098aec24d49c047044cd5e4e3e0f69cce8c33f8cc97aa4ee0829cf9",
+    "TienKung-Lab/legged_lab/envs/elf3/recovery_course_contract.py": "d9e5db9196b398a9e86b60dc6d998fdaea9c5702357e18baf6ede5e992f39e9a",
+    "scripts/train_elf3_recovery_curriculum.py": "f07bb83d7ef4b02469c4fa41cf9898fe4b8705edb8c16309e59fdab95cf7eacb",
+    "scripts/train_elf3_recovery_stage.py": "3ad3360af76b717f538eaa0c8692506a03f292f62ac437466f14e39177f6ab5e",
+    "scripts/recovery_curriculum_plan.py": "726aa405f60d9a43409e109b1589ff7c574c645d5d28982e8a2f84cff723baa6",
+    "scripts/build_elf3_recovery_init_bank.py": "44bc456bbed36158b190db46c03bdd75f5162722ce023a99e6487daa0eac1a4c",
+    "scripts/play_elf3_recovery_mujoco.py": "29e86ace78b10a5fe8bf332b2434d1c370c43c1e3b462bc21db1af5d6df662c1"
+  },
+  "data_files_sha256": {
+    "data/elf3_amp_v4/Recovery/fallAndGetUp1_subject1.npz": "ee62d1c82160df98151ac33eeb2d97b1d472cd22e25af30c59188100215c0d5f",
+    "data/elf3_amp_v4/WalkandRun/amass_side_step_left__B22.npz": "5da155a6f1e307d81d3b7857d28b82d157d3f219b751e1a292268fb91158b1c9",
+    "data/elf3_amp_v4/WalkandRun/amass_side_step_left__B22__mirror_right.npz": "bc238b530f2c69f2417269a3d472749cf88773fbcdc8df6d5a34df0bf1dd6f8d",
+    "data/elf3_amp_v4/WalkandRun/amass_side_step_right__B23.npz": "2853732f27df279e3eccc0195ae159640778cc6a8eee7542899d5304c47865c7",
+    "data/elf3_amp_v4/WalkandRun/amass_side_step_right__B23__mirror_left.npz": "28b923f1af5dfef6e513ae6ac2f237264299fb13bdea7eb1050268d53ac69b42",
+    "data/elf3_amp_v4/WalkandRun/arc_walk_left_loop_001__A029.npz": "386edc84442b1e563e8f4e71e901e420bfdd2b73df5e5d14f6ef0d7cc58992d3",
+    "data/elf3_amp_v4/WalkandRun/arc_walk_left_loop_001__A029__mirror_right.npz": "6d279822d689a833dbe42a546a6affe5b0e0ed65e729c27306d5eb6717696207",
+    "data/elf3_amp_v4/WalkandRun/neutral_idle_turn_360_001__A103.npz": "264b68a630c545bfc0bfc45def7d163113af2a9b7ad409537cc27a72432ea01c",
+    "data/elf3_amp_v4/WalkandRun/neutral_idle_turn_360_001__A103__mirror_left.npz": "370767ca566e30c6230e3af090589c4cd14a29f1ec7967b849008e4d0ab8c42e",
+    "data/elf3_amp_v4/WalkandRun/step_rotate_idle_000_002__A026.npz": "3432b7ac4e82fb03a5b6ede7a9cd7b46d918a2e0aa56fc2ce420627478c6a4d4",
+    "data/elf3_amp_v4/WalkandRun/walk_arc_cw_loop_002__A046.npz": "6fcfa7f90c32d484e42c0fb8eb870e87b2ed0f8313cef2bf01351e2880454501",
+    "data/elf3_amp_v4/WalkandRun/walk_arc_cw_loop_002__A046__mirror_ccw.npz": "0e0325b0e812237631a3cbe7475087c71d17b96644dae4b6fa45d014d7257166",
+    "data/elf3_amp_v4/WalkandRun/walk_backward_loop_001__A022.npz": "2fcfd6b45bcedd9c0f8961a0949b6845519b1cfcec320e66d585733db1f15144",
+    "data/elf3_amp_v4/WalkandRun/walk_backward_loop_001__A024.npz": "29c2e8f0b8fc51412ace7cd86413d71af7b2aeaf06fa927b7a518026d9c10891",
+    "data/elf3_amp_v4/WalkandRun/walk_forward_loop_002__A022.npz": "aa950cfc0589b5d0732302fbe3516a2417e21fb5762024152b6079370ddab4ef",
+    "data/elf3_amp_v4/WalkandRun/walk_forward_loop_002__A024.npz": "71a4aba4c63e478ceddde60c0085a13dc30789b98935c294f88961c32166f273",
+    "data/elf3_recovery_init_v4/supine_4096_seed20261117.json": "354180f3907b10641239ac32f520b0c3990e080901a3ba5a5123fe05d1a86a49",
+    "data/elf3_recovery_init_v4/supine_4096_seed20261117.npz": "391cbea281209dc68549418906e37851a0e392ff3b1b9ea8668a772b8072c3e8"
+  },
+  "source_motion": "Existing Amp_mjlab ELF3 V4 motions;16 untouched NPZ clips,1 Recovery+15 WalkandRun; no policy/discriminator weights imported",
+  "bank": "4096 FK-checked supine poses; original bytes and metadata retained for existing init-v4 checkpoint compatibility",
+  "recovery_velocity_probabilities": [
+    0.75,
+    0.2,
+    0.05
+  ],
+  "runtime_fall_trajectory_sampling": false,
+  "deploy_interface": {
+    "input": "history",
+    "shape": [
+      1,
+      500
+    ],
+    "output": "actions",
+    "output_shape": [
+      1,
+      29
+    ]
+  },
+  "robot_assets_modified": false,
+  "old_task_runtime_sources_modified": false
+}
